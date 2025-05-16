@@ -2,6 +2,7 @@
 
 import MemoryView from "@/components/MemoryView";
 import { Memory } from "@/emulator/memory";
+import { formatByte } from "@/utils/formatByte";
 import { useState } from "react";
 
 export default function CPUStateView() {
@@ -108,11 +109,4 @@ function FlagView(props: { header: string; value: boolean }) {
       </div>
     </div>
   );
-}
-
-function formatByte(data: number, noPrefix?: boolean): string {
-  if (data > 255) {
-    return "OVERFLOW";
-  }
-  return `${noPrefix ? "" : "0x"}${data > 15 ? data.toString(16) : "0" + data.toString(16)}`;
 }

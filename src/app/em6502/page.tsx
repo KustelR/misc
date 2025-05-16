@@ -1,4 +1,4 @@
-import CPUStateView from "./CPUStateView";
+import CPUStateView from "@/components/CPUStateView";
 
 export default function () {
   return (

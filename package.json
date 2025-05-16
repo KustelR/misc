@@ -13,6 +13,7 @@
     "@uiw/codemirror-theme-androidstudio": "^4.23.12",
     "@uiw/codemirror-theme-tokyo-night": "^4.23.12",
     "@uiw/react-codemirror": "^4.23.12",
+    "nanoid": "^5.1.5",
     "next": "15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

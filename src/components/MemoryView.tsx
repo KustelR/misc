@@ -65,22 +65,31 @@ export default function MemoryView(props: {
           return <MemoryCell key={nanoid()} value={value} />;
         })}
       </div>
-
-      <input
-        className="block w-[160px] bg-white/5"
-        placeholder="Offset Y (hex)"
-        type="text"
-        onChange={(event) => {
-          if (
-            event.target.value == "" ||
-            Number.isNaN(Number(parseInt(event.target.value, 16)))
-          ) {
-            setOffsetY(0);
-          } else {
-            setOffsetY(Number(parseInt(event.target.value, 16)));
-          }
-        }}
-      />
+      <div className="flex flex-row">
+        <input
+          className="block w-1/2 bg-white/5"
+          placeholder="Offset Y (hex)"
+          type="text"
+          onChange={(event) => {
+            if (
+              event.target.value == "" ||
+              Number.isNaN(Number(parseInt(event.target.value, 16)))
+            ) {
+              setOffsetY(0);
+            } else {
+              setOffsetY(Number(parseInt(event.target.value, 16)));
+            }
+          }}
+        />
+        <button
+          className="w-1/2 bg-white/10 cursor-pointer"
+          onClick={() => {
+            setOffsetY(offsetY + 1);
+          }}
+        >
+          increment
+        </button>
+      </div>
     </div>
   );
 }

@@ -21,7 +21,6 @@ class Word {
 
   sum(val: Word): { value: Word; isOverflown: boolean } {
     const res = this.value + val.toNumber();
-    this.value = res % 256;
     return { value: new Word(res % 256), isOverflown: res > 255 };
   }
   value: number;
@@ -40,6 +39,14 @@ class DoubleWord {
   }
   least(): Word {
     return new Word(this.value & 0xff);
+  }
+  increment(): { value: DoubleWord; isOverflown: boolean } {
+    this.value = (this.value + 1) & 0xffff;
+    return { value: this, isOverflown: this.value === 0 };
+  }
+  sum(val: DoubleWord): { value: DoubleWord; isOverflown: boolean } {
+    const res = this.value + val.toNumber();
+    return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };
   }
 }
 

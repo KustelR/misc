@@ -20,45 +20,59 @@ export interface ProcessorStatus {
   negative: boolean;
 }
 
+enum StatusPosition {
+  carry,
+  zero,
+  irqDisabled,
+  decimal,
+  brkCommand,
+  overflow,
+  negative,
+}
+
 function statusToReg(status: ProcessorStatus) {
   const register = new Word(0);
-  register.value = status.carry ? 1 : 0;
-  register.value |= status.zero ? 1 << 1 : 0;
-  register.value |= status.irqDisabled ? 1 << 2 : 0;
-  register.value |= status.decimal ? 1 << 3 : 0;
-  register.value |= status.brkCommand ? 1 << 4 : 0;
-  register.value |= status.overflow ? 1 << 5 : 0;
-  register.value |= status.negative ? 1 << 6 : 0;
+  register.value = status.carry ? 1 << StatusPosition.carry : 0;
+  register.value |= status.zero ? 1 << StatusPosition.zero : 0;
+  register.value |= status.irqDisabled ? 1 << StatusPosition.irqDisabled : 0;
+  register.value |= status.decimal ? 1 << StatusPosition.decimal : 0;
+  register.value |= status.brkCommand ? 1 << StatusPosition.brkCommand : 0;
+  register.value |= status.overflow ? 1 << StatusPosition.overflow : 0;
+  register.value |= status.negative ? 1 << StatusPosition.negative : 0;
   return register;
 }
 
 function statusFromReg(register: Word) {
   return {
-    carry: !!register.bit(0),
-    zero: !!register.bit(1),
-    irqDisabled: !!register.bit(2),
-    decimal: !!register.bit(3),
-    brkCommand: !!register.bit(4),
-    overflow: !!register.bit(5),
-    negative: !!register.bit(6),
+    carry: !!register.bit(StatusPosition.carry),
+    zero: !!register.bit(StatusPosition.zero),
+    irqDisabled: !!register.bit(StatusPosition.irqDisabled),
+    decimal: !!register.bit(StatusPosition.decimal),
+    brkCommand: !!register.bit(StatusPosition.brkCommand),
+    overflow: !!register.bit(StatusPosition.overflow),
+    negative: !!register.bit(StatusPosition.negative),
   };
 }
 
+export type CPURegisters = {
+  [key in ByteRegister]: Word;
+};
+
 export class CPU {
-  registers: Word[];
+  registers: CPURegisters;
   programCounter: DoubleWord;
   registerListeners: ((cpu: CPU) => void)[];
 
   memory: Memory;
   memoryListeners: ((m: Memory) => void)[];
   constructor() {
-    this.registers = [
-      new Word(0x0), // IDA
-      new Word(0x0), // IDX
-      new Word(0x0), // IDY
-      new Word(0x0), // SP
-      new Word(0x0), // PS
-    ];
+    this.registers = {
+      [ByteRegister.ida]: new Word(0x0),
+      [ByteRegister.idx]: new Word(0x0),
+      [ByteRegister.idy]: new Word(0x0),
+      [ByteRegister.sp]: new Word(0x0),
+      [ByteRegister.ps]: new Word(0x0),
+    };
     this.programCounter = new DoubleWord(0x0);
 
     this.memory = new Memory();

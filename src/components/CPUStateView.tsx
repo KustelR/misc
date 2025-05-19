@@ -1,18 +1,18 @@
 "use client";
 
 import MemoryView from "@/components/MemoryView";
-import { CPU, ByteRegister } from "@/emulator/cpu";
+import { CPU, ByteRegister, CPURegisters } from "@/emulator/cpu";
 import { DoubleWord, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { useEffect, useState } from "react";
 
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
-  const [registers, setRegisters] = useState<Word[]>(cpu.registers);
+  const [registers, setRegisters] = useState<CPURegisters>(cpu.registers);
   const [programCounter] = useState<DoubleWord>(cpu.programCounter);
   useEffect(() => {
     cpu.addRegisterListener((c) => {
-      setRegisters([...c.registers]);
+      setRegisters({ ...c.registers });
     });
   }, [cpu]);
 

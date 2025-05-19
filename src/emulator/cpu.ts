@@ -1,5 +1,12 @@
 import { MemoryError } from "./errors";
-import { AddressingMode, CommandType, Instruction } from "./instructions";
+import {
+  AddressingMode,
+  byteToCmd,
+  Command,
+  CommandType,
+  getArgumentLength,
+  Instruction,
+} from "./instructions";
 import { DoubleWord, Memory, Word } from "./memory";
 
 export enum ByteRegister {
@@ -85,6 +92,12 @@ export class CPU {
     return statusFromReg(this.registers[ByteRegister.ps]);
   }
 
+  toggleStatus(position: number) {
+    if (position < 0 || position > 7) return;
+    const status = this.registers[ByteRegister.ps];
+    status.value ^= 1 << position;
+    this.setByteRegister(ByteRegister.ps, status);
+  }
   writeMemory(address: DoubleWord, value: Word) {
     this.memory.writeByte(address, value);
     this.memoryListeners.forEach((listener) => listener(this.memory));
@@ -117,14 +130,7 @@ export class CPU {
     }
   }
 
-  toggleStatus(position: number) {
-    if (position < 0 || position > 7) return;
-    const status = this.registers[ByteRegister.ps];
-    status.value ^= 1 << position;
-    this.setByteRegister(ByteRegister.ps, status);
-  }
-
-  perform(instruction: Instruction) {
+  execute(instruction: Instruction) {
     switch (instruction.command.commandType) {
       case CommandType.adc: {
         let value;
@@ -141,7 +147,7 @@ export class CPU {
         this.setByteRegister(ByteRegister.ida, result.value);
         break;
       }
-      case CommandType.sda: {
+      case CommandType.sta: {
         const address = getMemoryAddress(
           this.registers,
           instruction.command.addressingMode,
@@ -156,6 +162,39 @@ export class CPU {
         break;
       }
     }
+  }
+  readInstruction(): { instruction: Instruction; offset: number } {
+    console.log(this.programCounter.value.toString(16));
+    const command = byteToCmd(this.memory.readByte(this.programCounter));
+    if (command === undefined) {
+      throw new Error("Invalid opcode");
+    }
+    const instruction: Instruction = { command, trailingBytes: [] };
+    const argsLength = getArgumentLength(command.addressingMode);
+    for (let i = 1; i < argsLength + 1; i++) {
+      instruction.trailingBytes.push(
+        this.memory.readByte(this.programCounter.sum(new DoubleWord(i)).value),
+      );
+    }
+    return { instruction, offset: argsLength };
+  }
+
+  start() {
+    while (true) {
+      const { instruction, offset } = this.readInstruction();
+      if (instruction.command.commandType == CommandType.brk) {
+        this.toggleStatus(StatusPosition.brkCommand);
+        this.programCounter.increment();
+        break;
+      }
+      this.execute(instruction);
+      this.programCounter = this.programCounter.sum(
+        new DoubleWord(offset),
+      ).value;
+      this.programCounter.increment();
+    }
+    this.registerListeners.forEach((listener) => listener(this));
+    this.memoryListeners.forEach((listener) => listener(this.memory));
   }
 }
 

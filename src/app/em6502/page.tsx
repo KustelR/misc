@@ -18,7 +18,7 @@ export default function () {
     cpu.start();
   }, [cpu]);
   return (
-    <main className="flex flex-row space-x-6 h-full space-y-4">
+    <main className="flex flex-row space-x-6 flex-1 space-y-4">
       <CodeView />
       <CPUStateView cpu={cpu} />
     </main>

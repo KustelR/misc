@@ -6,12 +6,14 @@ import { androidstudio } from "@uiw/codemirror-theme-androidstudio";
 
 export default function Editor() {
   return (
-    <div className="flex-1 p-2 overflow-auto">
-      <CodeMirror
-        className="sm:w-full md:w-[400px] lg:w-[700px] whitespace-pre"
-        theme={androidstudio}
-        value={SAMPLE_CODE}
-      />
+    <div className="flex-1 p-2 overflow-hidden">
+      <div className="h-full overflow-auto">
+        <CodeMirror
+          className="sm:w-full md:w-[400px] lg:w-[700px] whitespace-pre"
+          theme={androidstudio}
+          value={SAMPLE_CODE}
+        />
+      </div>
     </div>
   );
 }

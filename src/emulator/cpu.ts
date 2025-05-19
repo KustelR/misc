@@ -95,18 +95,19 @@ export class CPU {
     switch (mode) {
       case AddressingMode.immediate:
         return data[0];
+      case AddressingMode.zeroPage:
       default:
-        throw new MemoryError(`Invalid addressing mode for read: ${mode}`);
+        return this.memory.readByte(
+          getMemoryAddress(this.registers, mode, data),
+        );
     }
   }
 
-  getMemoryAddress(mode: AddressingMode, data: Word[]): DoubleWord {
-    switch (mode) {
-      case AddressingMode.zeroPage:
-        return new DoubleWord(data[0].toNumber());
-      default:
-        throw new MemoryError(`Invalid addressing mode for write: ${mode}`);
-    }
+  toggleStatus(position: number) {
+    if (position < 0 || position > 7) return;
+    const status = this.registers[ByteRegister.ps];
+    status.value ^= 1 << position;
+    this.setByteRegister(ByteRegister.ps, status);
   }
 
   perform(instruction: Instruction) {
@@ -127,7 +128,8 @@ export class CPU {
         break;
       }
       case CommandType.sda: {
-        const address = this.getMemoryAddress(
+        const address = getMemoryAddress(
+          this.registers,
           instruction.command.addressingMode,
           instruction.trailingBytes,
         );
@@ -146,4 +148,39 @@ function clampWord(value: Word | DoubleWord): Word {
     return value.least();
   }
   return value;
+}
+
+function getMemoryAddress(
+  registers: CPURegisters,
+  mode: AddressingMode,
+  data: Word[],
+): DoubleWord {
+  switch (mode) {
+    case AddressingMode.zeroPage:
+      return new DoubleWord(data[0].toNumber());
+    case AddressingMode.absolute:
+      return new DoubleWord(data[0].toNumber() | (data[1].toNumber() << 8));
+    case AddressingMode.absoluteX: {
+      return new DoubleWord(
+        data[0].toNumber() |
+          ((data[1].toNumber() << 8) + registers[ByteRegister.idx].toNumber()),
+      );
+    }
+    case AddressingMode.absoluteY: {
+      return new DoubleWord(
+        data[0].toNumber() |
+          ((data[1].toNumber() << 8) + registers[ByteRegister.idy].toNumber()),
+      );
+    }
+    case AddressingMode.zeroPageX:
+      return new DoubleWord(
+        data[0].toNumber() + registers[ByteRegister.idx].toNumber(),
+      );
+    case AddressingMode.zeroPageY:
+      return new DoubleWord(
+        data[0].toNumber() + registers[ByteRegister.idy].toNumber(),
+      );
+    default:
+      throw new MemoryError(`Invalid addressing mode: ${mode}`);
+  }
 }

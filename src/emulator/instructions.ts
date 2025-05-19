@@ -6,9 +6,13 @@ export enum CommandType {
 }
 
 export enum AddressingMode {
-  absolute,
-  zeroPage,
   immediate,
+  absolute,
+  absoluteX,
+  absoluteY,
+  zeroPage,
+  zeroPageX,
+  zeroPageY,
 }
 
 export interface Command {

@@ -1,23 +1,22 @@
 "use client";
 
+import { CPU } from "@/emulator/cpu";
 import { DoubleWord, Memory, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 
 export default function MemoryView(props: {
-  memory: Memory;
+  cpu: CPU;
   height?: number;
   defaultOffsetY?: number;
 }) {
-  const { memory, height, defaultOffsetY } = props;
+  const { cpu, height, defaultOffsetY } = props;
 
   const [cells, setCells] = useState<number[]>([]);
   const [offsetY, setOffsetY] = useState<number>(defaultOffsetY ?? 0);
 
   useEffect(() => {
-    memory.writeByte(new DoubleWord(17), new Word(2));
-    memory.writeByte(new DoubleWord(18), new Word(1));
     const newCells = [];
     for (let y = 0; y < (height ?? 16); y++) {
       for (let x = 0; x < 16; x++) {
@@ -25,12 +24,26 @@ export default function MemoryView(props: {
           newCells.push(999);
         }
         const address = new DoubleWord((y + offsetY) * 16 + x);
-        const value = memory.readByte(address);
+        const value = cpu.memory.readByte(address);
         newCells.push(value.toNumber());
       }
     }
     setCells(newCells);
-  }, [memory, offsetY, height]);
+    cpu.addMemoryListener((m) => {
+      const newCells = [];
+      for (let y = 0; y < (height ?? 16); y++) {
+        for (let x = 0; x < 16; x++) {
+          if (x === 0) {
+            newCells.push(999);
+          }
+          const address = new DoubleWord((y + offsetY) * 16 + x);
+          const value = cpu.memory.readByte(address);
+          newCells.push(value.toNumber());
+        }
+      }
+      setCells(newCells);
+    });
+  }, [cpu.memory, offsetY, height]);
   return (
     <div className="">
       <header className="bg-white/10 flex justify-center items-center px-2">

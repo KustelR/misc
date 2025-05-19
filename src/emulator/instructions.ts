@@ -3,9 +3,11 @@ import { Word } from "./memory";
 export enum CommandType {
   adc,
   sda,
+  inx,
 }
 
 export enum AddressingMode {
+  implied,
   immediate,
   absolute,
   absoluteX,

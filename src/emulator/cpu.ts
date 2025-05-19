@@ -150,6 +150,11 @@ export class CPU {
         this.writeMemory(address, this.registers[ByteRegister.ida]);
         break;
       }
+      case CommandType.inx: {
+        const result = this.registers[ByteRegister.idx].sum(new Word(1));
+        this.setByteRegister(ByteRegister.idx, result.value);
+        break;
+      }
     }
   }
 }

@@ -15,7 +15,6 @@ export default function () {
     cpu.writeMemory(new DoubleWord(0x1002), new Word(0x85));
     cpu.writeMemory(new DoubleWord(0x1003), new Word(0x0));
     cpu.programCounter = new DoubleWord(0x1000);
-    cpu.setByteRegister(ByteRegister.ps, new Word(255));
     cpu.start();
   }, [cpu]);
   return (

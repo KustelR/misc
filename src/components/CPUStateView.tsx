@@ -1,32 +1,36 @@
 "use client";
 
 import MemoryView from "@/components/MemoryView";
-import { Memory } from "@/emulator/memory";
+import { CPU, ByteRegister } from "@/emulator/cpu";
+import { DoubleWord, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function CPUStateView() {
-  const [mem, setMem] = useState<Memory>(new Memory());
+export default function CPUStateView(props: { cpu: CPU }) {
+  const { cpu } = props;
+  const [registers, setRegisters] = useState<Word[]>(cpu.registers);
+  const [programCounter] = useState<DoubleWord>(cpu.programCounter);
+  useEffect(() => {
+    cpu.addRegisterListener((c) => {
+      setRegisters([...c.registers]);
+    });
+  }, [cpu]);
 
   return (
     <div className="h-full flex flex-col bg-neutral-800 space-y-2 overflow-y-auto">
       <header className="bg-white/10 w-full px-2">CPU State</header>
       <div className="flex flex-row flex-wrap p-2 space-x-2 space-y-2">
-        <ByteView header="IDA" value={255} />
-        <ByteView header="IDX" value={11} />
-        <ByteView header="IDY" value={0} />
-        <ProgramCounter value={1000} />
-        <ByteView header="Stack Pointer" value={22} />
-        <Flags
-          carry={true}
-          zero={false}
-          irqDisabled={false}
-          decimal={false}
-          brkCommand={false}
-          overflow={false}
-          negative={true}
+        <ByteView header="IDA" value={registers[ByteRegister.ida].value} />
+        <ByteView header="IDX" value={registers[ByteRegister.idx].value} />
+        <ByteView header="IDY" value={registers[ByteRegister.idy].value} />
+        <ProgramCounter value={programCounter.value} />
+        <ByteView
+          header="Stack Pointer"
+          value={registers[ByteRegister.sp].value}
         />
-        <MemoryView memory={mem} height={16} />
+        <Flags {...cpu.getProcessorStatus()} />
+        <MemoryView cpu={cpu} height={16} />
+        <button onClick={() => console.log(cpu)}>JSON</button>
       </div>
     </div>
   );

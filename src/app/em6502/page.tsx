@@ -10,28 +10,13 @@ import { useEffect, useState } from "react";
 export default function () {
   const [cpu, setCpu] = useState(new CPU());
   useEffect(() => {
-    cpu.writeMemory(new DoubleWord(17), new Word(2));
-    cpu.perform({
-      command: {
-        commandType: CommandType.adc,
-        addressingMode: AddressingMode.immediate,
-      },
-      trailingBytes: [new Word(129)],
-    });
-    cpu.perform({
-      command: {
-        commandType: CommandType.adc,
-        addressingMode: AddressingMode.immediate,
-      },
-      trailingBytes: [new Word(128)],
-    });
-    cpu.perform({
-      command: {
-        commandType: CommandType.sda,
-        addressingMode: AddressingMode.zeroPage,
-      },
-      trailingBytes: [new Word(1)],
-    });
+    cpu.writeMemory(new DoubleWord(0x1000), new Word(0x69));
+    cpu.writeMemory(new DoubleWord(0x1001), new Word(0x1));
+    cpu.writeMemory(new DoubleWord(0x1002), new Word(0x85));
+    cpu.writeMemory(new DoubleWord(0x1003), new Word(0x0));
+    cpu.programCounter = new DoubleWord(0x1000);
+    cpu.setByteRegister(ByteRegister.ps, new Word(255));
+    cpu.start();
   }, [cpu]);
   return (
     <main className="flex flex-row space-x-6 h-full space-y-4">

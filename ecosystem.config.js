@@ -3,8 +3,6 @@ module.exports = {
     {
       name: 'misc website',
       script: 'npm run start',
-      exec_mode: 'cluster',
-      instances: 'max'
     }
   ]
 }

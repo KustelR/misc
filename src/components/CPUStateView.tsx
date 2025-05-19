@@ -9,10 +9,13 @@ import { useEffect, useState } from "react";
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
   const [registers, setRegisters] = useState<CPURegisters>(cpu.registers);
-  const [programCounter] = useState<DoubleWord>(cpu.programCounter);
+  const [programCounter, setProgramCounter] = useState<DoubleWord>(
+    cpu.programCounter,
+  );
   useEffect(() => {
     cpu.addRegisterListener((c) => {
       setRegisters({ ...c.registers });
+      setProgramCounter(c.programCounter);
     });
   }, [cpu]);
 

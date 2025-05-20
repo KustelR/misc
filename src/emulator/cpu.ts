@@ -125,7 +125,7 @@ export class CPU {
       case AddressingMode.zeroPage:
       default:
         return this.memory.readByte(
-          getMemoryAddress(this.registers, mode, data),
+          getMemoryAddress(this.registers, this.memory, mode, data),
         );
     }
   }
@@ -150,6 +150,7 @@ export class CPU {
       case CommandType.sta: {
         const address = getMemoryAddress(
           this.registers,
+          this.memory,
           instruction.command.addressingMode,
           instruction.trailingBytes,
         );
@@ -164,7 +165,6 @@ export class CPU {
     }
   }
   readInstruction(): { instruction: Instruction; offset: number } {
-    console.log(this.programCounter.value.toString(16));
     const command = byteToCmd(this.memory.readByte(this.programCounter));
     if (command === undefined) {
       throw new Error("Invalid opcode");
@@ -210,6 +210,7 @@ function clampWord(value: Word | DoubleWord): Word {
 
 function getMemoryAddress(
   registers: CPURegisters,
+  memory: Memory,
   mode: AddressingMode,
   data: Word[],
 ): DoubleWord {
@@ -218,6 +219,7 @@ function getMemoryAddress(
       return new DoubleWord(data[0].toNumber());
     case AddressingMode.absolute:
       return new DoubleWord(data[0].toNumber() | (data[1].toNumber() << 8));
+
     case AddressingMode.absoluteX: {
       return new DoubleWord(
         data[0].toNumber() |
@@ -230,6 +232,7 @@ function getMemoryAddress(
           ((data[1].toNumber() << 8) + registers[ByteRegister.idy].toNumber()),
       );
     }
+
     case AddressingMode.zeroPageX:
       return new DoubleWord(
         data[0].toNumber() + registers[ByteRegister.idx].toNumber(),
@@ -238,6 +241,32 @@ function getMemoryAddress(
       return new DoubleWord(
         data[0].toNumber() + registers[ByteRegister.idy].toNumber(),
       );
+    case AddressingMode.indirect: {
+      const loc = new DoubleWord(
+        data[0].toNumber() | (data[1].toNumber() << 8),
+      );
+      const least = memory.readByte(loc);
+      const most = memory.readByte(loc.sum(1).value);
+      return new DoubleWord(least.toNumber() | (most.toNumber() << 8));
+    }
+    case AddressingMode.indirectX: {
+      const loc = new DoubleWord(
+        data[0].sum(registers[ByteRegister.idx]).value.value,
+      );
+      const least = memory.readByte(loc);
+      const most = memory.readByte(loc.sum(1).value);
+      return new DoubleWord(least.toNumber() | (most.toNumber() << 8));
+    }
+    case AddressingMode.indirectY: {
+      const locTemp = new DoubleWord(data[0].value);
+      const result = locTemp.sum(registers[ByteRegister.idy].value);
+      const loc = new DoubleWord(result.value.value);
+      const least = memory.readByte(loc);
+      const most = memory
+        .readByte(loc.sum(1).value)
+        .sum(new Word(result.isOverflown ? 1 : 0)).value;
+      return new DoubleWord(least.toNumber() | (most.toNumber() << 8));
+    }
     default:
       throw new MemoryError(`Invalid addressing mode: ${mode}`);
   }

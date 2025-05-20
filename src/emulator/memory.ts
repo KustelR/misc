@@ -44,8 +44,8 @@ class DoubleWord {
     this.value = (this.value + 1) & 0xffff;
     return { value: this, isOverflown: this.value === 0 };
   }
-  sum(val: DoubleWord): { value: DoubleWord; isOverflown: boolean } {
-    const res = this.value + val.toNumber();
+  sum(val: DoubleWord | number): { value: DoubleWord; isOverflown: boolean } {
+    const res = this.value + (typeof val == "number" ? val : val.toNumber());
     return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };
   }
 }

@@ -14,9 +14,14 @@ export enum AddressingMode {
   absolute,
   absoluteX,
   absoluteY,
+  indirect,
+  indirectX,
+  indirectY,
   zeroPage,
   zeroPageX,
   zeroPageY,
+  accumulator,
+  relative,
 }
 
 export interface Command {
@@ -31,15 +36,20 @@ export interface Instruction {
 
 export function getArgumentLength(addressingMode: AddressingMode) {
   switch (addressingMode) {
-    case AddressingMode.implied: {
+    case AddressingMode.implied:
+    case AddressingMode.accumulator: {
       return 0;
     }
     case AddressingMode.immediate:
+    case AddressingMode.relative:
     case AddressingMode.zeroPage:
     case AddressingMode.zeroPageX:
-    case AddressingMode.zeroPageY: {
+    case AddressingMode.zeroPageY:
+    case AddressingMode.indirectX:
+    case AddressingMode.indirectY: {
       return 1;
     }
+    case AddressingMode.indirect:
     case AddressingMode.absolute:
     case AddressingMode.absoluteX:
     case AddressingMode.absoluteY: {

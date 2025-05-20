@@ -216,38 +216,32 @@ function getMemoryAddress(
 ): DoubleWord {
   switch (mode) {
     case AddressingMode.zeroPage:
-      return new DoubleWord(data[0].toNumber());
+      return new DoubleWord(data[0].value);
     case AddressingMode.absolute:
-      return new DoubleWord(data[0].toNumber() | (data[1].toNumber() << 8));
+      return new DoubleWord(data[0].value | (data[1].value << 8));
 
     case AddressingMode.absoluteX: {
       return new DoubleWord(
-        data[0].toNumber() |
-          ((data[1].toNumber() << 8) + registers[ByteRegister.idx].toNumber()),
+        data[0].value |
+          ((data[1].value << 8) + registers[ByteRegister.idx].value),
       );
     }
     case AddressingMode.absoluteY: {
       return new DoubleWord(
-        data[0].toNumber() |
-          ((data[1].toNumber() << 8) + registers[ByteRegister.idy].toNumber()),
+        data[0].value |
+          ((data[1].value << 8) + registers[ByteRegister.idy].value),
       );
     }
 
     case AddressingMode.zeroPageX:
-      return new DoubleWord(
-        data[0].toNumber() + registers[ByteRegister.idx].toNumber(),
-      );
+      return new DoubleWord(data[0].value + registers[ByteRegister.idx].value);
     case AddressingMode.zeroPageY:
-      return new DoubleWord(
-        data[0].toNumber() + registers[ByteRegister.idy].toNumber(),
-      );
+      return new DoubleWord(data[0].value + registers[ByteRegister.idy].value);
     case AddressingMode.indirect: {
-      const loc = new DoubleWord(
-        data[0].toNumber() | (data[1].toNumber() << 8),
-      );
+      const loc = new DoubleWord(data[0].value | (data[1].value << 8));
       const least = memory.readByte(loc);
       const most = memory.readByte(loc.sum(1).value);
-      return new DoubleWord(least.toNumber() | (most.toNumber() << 8));
+      return new DoubleWord(least.value | (most.value << 8));
     }
     case AddressingMode.indirectX: {
       const loc = new DoubleWord(
@@ -255,19 +249,22 @@ function getMemoryAddress(
       );
       const least = memory.readByte(loc);
       const most = memory.readByte(loc.sum(1).value);
-      return new DoubleWord(least.toNumber() | (most.toNumber() << 8));
+      return new DoubleWord(least.value | (most.value << 8));
     }
     case AddressingMode.indirectY: {
       const locTemp = new DoubleWord(data[0].value);
-      const result = locTemp.sum(registers[ByteRegister.idy].value);
-      const loc = new DoubleWord(result.value.value);
+      const { value, isOverflown } = locTemp.sum(
+        registers[ByteRegister.idy].value,
+      );
+      const loc = new DoubleWord(value.value);
       const least = memory.readByte(loc);
       const most = memory
         .readByte(loc.sum(1).value)
-        .sum(new Word(result.isOverflown ? 1 : 0)).value;
-      return new DoubleWord(least.toNumber() | (most.toNumber() << 8));
+        .sum(new Word(isOverflown ? 1 : 0)).value;
+      return new DoubleWord(least.value | (most.value << 8));
     }
     default:
       throw new MemoryError(`Invalid addressing mode: ${mode}`);
   }
 }
+  

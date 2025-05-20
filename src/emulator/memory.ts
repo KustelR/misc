@@ -5,9 +5,6 @@ class Word {
     }
     this.value = data;
   }
-  toNumber() {
-    return this.value;
-  }
   toDoubleWord() {
     return new DoubleWord(this.value);
   }
@@ -20,7 +17,7 @@ class Word {
   }
 
   sum(val: Word): { value: Word; isOverflown: boolean } {
-    const res = this.value + val.toNumber();
+    const res = this.value + val.value;
     return { value: new Word(res % 256), isOverflown: res > 255 };
   }
   value: number;
@@ -34,9 +31,6 @@ class DoubleWord {
     this.value = data;
   }
   value: number;
-  toNumber() {
-    return this.value;
-  }
   least(): Word {
     return new Word(this.value & 0xff);
   }
@@ -45,7 +39,7 @@ class DoubleWord {
     return { value: this, isOverflown: this.value === 0 };
   }
   sum(val: DoubleWord | number): { value: DoubleWord; isOverflown: boolean } {
-    const res = this.value + (typeof val == "number" ? val : val.toNumber());
+    const res = this.value + (typeof val == "number" ? val : val.value);
     return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };
   }
 }
@@ -56,11 +50,11 @@ class Memory {
   }
 
   readByte(address: DoubleWord): Word {
-    return new Word(this.memory[address.toNumber()]);
+    return new Word(this.memory[address.value]);
   }
 
   writeByte(address: DoubleWord, value: Word) {
-    this.memory[address.toNumber()] = value.toNumber();
+    this.memory[address.value] = value.value;
   }
 
   memory: Uint8Array;

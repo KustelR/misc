@@ -15,7 +15,14 @@ class Word {
     }
     return (this.value >> index) & 1;
   }
-
+  increment(): { value: Word; isOverflown: boolean } {
+    this.value = (this.value + 1) & 0xff;
+    return { value: this, isOverflown: this.value === 0 };
+  }
+  decrement(): { value: Word; isOverflown: boolean } {
+    this.value = (this.value - 1) & 0xff;
+    return { value: this, isOverflown: this.value === 255 };
+  }
   sum(val: Word): { value: Word; raw: number; isOverflown: boolean } {
     const res = this.value + val.value;
     return { value: new Word(res % 256), raw: res, isOverflown: res > 255 };

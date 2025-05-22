@@ -148,34 +148,25 @@ export class CPU {
   execute(instruction: Instruction) {
     switch (instruction.command.commandType) {
       case CommandType.adc: {
-        let value;
-        value = this.getValue(
-          instruction.command.addressingMode,
-          instruction.trailingBytes,
-        );
-        const result = this.registers[ByteRegister.ida].sum(value);
-
-        let status = statusFromReg(this.registers[ByteRegister.ps]);
-        status.overflow = result.isOverflown;
-        this.setByteRegister(ByteRegister.ps, statusToReg(status));
-
-        this.setByteRegister(ByteRegister.ida, result.value);
+        adc.call(this, instruction);
         break;
       }
       case CommandType.sta: {
-        const address = getMemoryAddress(
-          this.registers,
-          this.memory,
-          instruction.command.addressingMode,
-          instruction.trailingBytes,
-        );
-        this.writeMemory(address, this.registers[ByteRegister.ida]);
+        sta.call(this, instruction);
         break;
       }
       case CommandType.inx: {
-        const result = this.registers[ByteRegister.idx].sum(new Word(1));
-        this.setByteRegister(ByteRegister.idx, result.value);
+        inx.call(this);
         break;
+      }
+      case CommandType.lda: {
+        lda.call(this, instruction);
+        break;
+      }
+      default: {
+        throw new Error(
+          `Unknown instruction: ${CommandType[instruction.command.commandType]}`,
+        );
       }
     }
   }

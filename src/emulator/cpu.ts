@@ -17,6 +17,10 @@ import {
   pla,
   php,
   pha,
+  and,
+  eor,
+  ora,
+  bit,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -48,7 +52,7 @@ export interface ProcessorStatus {
   negative: boolean;
 }
 
-enum StatusPosition {
+export enum StatusPosition {
   carry,
   zero,
   irqDisabled,
@@ -159,6 +163,15 @@ export class CPU {
     return result;
   }
 
+  setStatus(position: StatusPosition, value: boolean) {
+    const status = this.reg[ByteRegister.ps];
+    if (value) {
+      status.value |= 1 << position;
+    } else {
+      status.value &= ~(1 << position);
+    }
+    this.reg[ByteRegister.ps] = status;
+  }
   toggleStatus(position: StatusPosition) {
     if (position < 0 || position > 7) return;
     const status = this.reg[ByteRegister.ps];
@@ -248,6 +261,18 @@ export class CPU {
         break;
       case CommandType.plp:
         plp.call(this);
+        break;
+      case CommandType.and:
+        and.call(this, instruction);
+        break;
+      case CommandType.eor:
+        eor.call(this, instruction);
+        break;
+      case CommandType.ora:
+        ora.call(this, instruction);
+        break;
+      case CommandType.bit:
+        bit.call(this, instruction);
         break;
       default: {
         throw new Error(

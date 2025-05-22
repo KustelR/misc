@@ -27,6 +27,15 @@ class Word {
     const res = this.value + val.value;
     return { value: new Word(res % 256), raw: res, isOverflown: res > 255 };
   }
+  and(val: Word): Word {
+    return new Word(this.value & val.value);
+  }
+  xor(val: Word): Word {
+    return new Word(this.value ^ val.value);
+  }
+  or(val: Word): Word {
+    return new Word(this.value | val.value);
+  }
   value: number;
 }
 

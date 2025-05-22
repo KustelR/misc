@@ -16,3 +16,7 @@ export { default as php } from "./php";
 export { default as pla } from "./pla";
 export { default as plp } from "./plp";
 export { default as tya } from "./tya";
+export { default as and } from "./and";
+export { default as eor } from "./eor";
+export { default as ora } from "./ora";
+export { default as bit } from "./bit";

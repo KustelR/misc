@@ -22,6 +22,7 @@ import {
   Instruction,
 } from "./instructions";
 import { DoubleWord, Memory, Word } from "./memory";
+import { Stack } from "./stack";
 
 export enum ByteRegister {
   ida,
@@ -80,33 +81,6 @@ export type CPURegisters = {
 };
 
 export class CPU {
-  private registers: CPURegisters;
-  get reg() {
-    return this.registers;
-  }
-  set reg(value: CPURegisters) {
-    this.registers = value;
-    this.registerListeners.forEach((listener) => listener(this));
-  }
-  private programCounter: DoubleWord;
-  set pc(value: DoubleWord) {
-    this.programCounter = value;
-    this.registerListeners.forEach((listener) => listener(this));
-  }
-  get pc() {
-    return this.programCounter;
-  }
-  private registerListeners: ((cpu: CPU) => void)[];
-
-  private memory: Memory;
-  get mem() {
-    return this.memory;
-  }
-  set mem(value: Memory) {
-    this.memory = value;
-    this.memoryListeners.forEach((listener) => listener(this.memory));
-  }
-  private memoryListeners: ((m: Memory) => void)[];
   constructor() {
     this.registers = {
       [ByteRegister.ida]: new Word(0x0),
@@ -118,9 +92,41 @@ export class CPU {
     this.programCounter = new DoubleWord(0x0);
 
     this.memory = new Memory();
+    this.stack = new Stack();
 
     this.memoryListeners = [];
     this.registerListeners = [];
+  }
+
+  private registers: CPURegisters;
+  private programCounter: DoubleWord;
+  private memoryListeners: ((m: Memory) => void)[];
+  private registerListeners: ((cpu: CPU) => void)[];
+
+  private memory: Memory;
+  private stack: Stack;
+
+  get reg() {
+    return this.registers;
+  }
+  set reg(value: CPURegisters) {
+    this.registers = value;
+    this.registerListeners.forEach((listener) => listener(this));
+  }
+
+  set pc(value: DoubleWord) {
+    this.programCounter = value;
+    this.registerListeners.forEach((listener) => listener(this));
+  }
+  get pc() {
+    return this.programCounter;
+  }
+  get mem() {
+    return this.memory;
+  }
+  set mem(value: Memory) {
+    this.memory = value;
+    this.memoryListeners.forEach((listener) => listener(this.memory));
   }
 
   getProcessorStatus(): ProcessorStatus {
@@ -135,6 +141,16 @@ export class CPU {
       ...this.getProcessorStatus(),
       ...data,
     });
+  }
+
+  pushStack(value: Word) {
+    this.reg[ByteRegister.sp] = this.reg[ByteRegister.sp].increment().value;
+    this.stack.push(value, this.reg[ByteRegister.sp]);
+  }
+  pull(): Word {
+    const result = this.stack.pull(this.reg[ByteRegister.sp]);
+    this.reg[ByteRegister.sp] = this.reg[ByteRegister.sp].decrement().value;
+    return result;
   }
 
   toggleStatus(position: StatusPosition) {

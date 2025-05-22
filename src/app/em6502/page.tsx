@@ -7,14 +7,30 @@ import { AddressingMode, CommandType } from "@/emulator/instructions";
 import { DoubleWord, Word } from "@/emulator/memory";
 import { useEffect, useState } from "react";
 
+const PROGRAM_START = 0x1000;
+
 export default function () {
   const [cpu, setCpu] = useState(new CPU());
+  const [programCounter, setProgramCounter] = useState(
+    new DoubleWord(PROGRAM_START),
+  );
+  function inc() {
+    setProgramCounter(new DoubleWord(programCounter.value + 1));
+  }
   useEffect(() => {
-    cpu.writeMemory(new DoubleWord(0x1000), new Word(0xa9));
-    cpu.writeMemory(new DoubleWord(0x1001), new Word(0x2));
-    cpu.writeMemory(new DoubleWord(0x1002), new Word(0x85));
-    cpu.writeMemory(new DoubleWord(0x1003), new Word(0x0));
-    cpu.pc = new DoubleWord(0x1000);
+    cpu.pc = new DoubleWord(PROGRAM_START);
+    let pc = new DoubleWord(PROGRAM_START);
+    function inc() {
+      pc = new DoubleWord(pc.value + 1);
+    }
+    cpu.writeMemory(pc, new Word(0xa9));
+    inc();
+    cpu.writeMemory(pc, new Word(0x2));
+    inc();
+    cpu.writeMemory(pc, new Word(0x85));
+    inc();
+    cpu.writeMemory(pc, new Word(0x0));
+    inc();
     cpu.start();
   }, [cpu]);
   return (

@@ -37,7 +37,7 @@ enum StatusPosition {
   negative,
 }
 
-function statusToReg(status: ProcessorStatus) {
+export function statusToReg(status: ProcessorStatus) {
   const register = new Word(0);
   register.value = status.carry ? 1 << StatusPosition.carry : 0;
   register.value |= status.zero ? 1 << StatusPosition.zero : 0;
@@ -49,7 +49,7 @@ function statusToReg(status: ProcessorStatus) {
   return register;
 }
 
-function statusFromReg(register: Word) {
+export function statusFromReg(register: Word) {
   return {
     carry: !!register.bit(StatusPosition.carry),
     zero: !!register.bit(StatusPosition.zero),
@@ -66,12 +66,26 @@ export type CPURegisters = {
 };
 
 export class CPU {
-  registers: CPURegisters;
-  programCounter: DoubleWord;
-  registerListeners: ((cpu: CPU) => void)[];
+  private registers: CPURegisters;
+  get reg() {
+    return this.registers;
+  }
+  set reg(value: CPURegisters) {
+    this.registers = value;
+    this.registerListeners.forEach((listener) => listener(this));
+  }
+  private programCounter: DoubleWord;
+  private registerListeners: ((cpu: CPU) => void)[];
 
-  memory: Memory;
-  memoryListeners: ((m: Memory) => void)[];
+  private memory: Memory;
+  get mem() {
+    return this.memory;
+  }
+  set mem(value: Memory) {
+    this.memory = value;
+    this.memoryListeners.forEach((listener) => listener(this.memory));
+  }
+  private memoryListeners: ((m: Memory) => void)[];
   constructor() {
     this.registers = {
       [ByteRegister.ida]: new Word(0x0),
@@ -105,17 +119,18 @@ export class CPU {
   addMemoryListener(listener: (m: Memory) => void) {
     this.memoryListeners.push(listener);
   }
+  addRegisterListener(listener: (cpu: CPU) => void) {
+    this.registerListeners.push(listener);
+  }
 
   setByteRegister(register: ByteRegister, value: Word) {
-    this.registers[register] = value;
-    this.registerListeners.forEach((listener) => listener(this));
+    const oldReg = this.registers;
+    oldReg[register] = value;
+    this.reg = oldReg;
   }
   setProgramCounter(value: DoubleWord) {
     this.programCounter = value;
     this.registerListeners.forEach((listener) => listener(this));
-  }
-  addRegisterListener(listener: (cpu: CPU) => void) {
-    this.registerListeners.push(listener);
   }
 
   getValue(mode: AddressingMode, data: Word[]) {

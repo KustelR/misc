@@ -10,11 +10,11 @@ import { useEffect, useState } from "react";
 export default function () {
   const [cpu, setCpu] = useState(new CPU());
   useEffect(() => {
-    cpu.writeMemory(new DoubleWord(0x1000), new Word(0x69));
-    cpu.writeMemory(new DoubleWord(0x1001), new Word(0x1));
+    cpu.writeMemory(new DoubleWord(0x1000), new Word(0xa9));
+    cpu.writeMemory(new DoubleWord(0x1001), new Word(0x2));
     cpu.writeMemory(new DoubleWord(0x1002), new Word(0x85));
     cpu.writeMemory(new DoubleWord(0x1003), new Word(0x0));
-    cpu.programCounter = new DoubleWord(0x1000);
+    cpu.pc = new DoubleWord(0x1000);
     cpu.start();
   }, [cpu]);
   return (

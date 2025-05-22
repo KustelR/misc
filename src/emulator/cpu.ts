@@ -1,3 +1,4 @@
+import { sta, inx, adc, lda } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
   AddressingMode,
@@ -75,6 +76,13 @@ export class CPU {
     this.registerListeners.forEach((listener) => listener(this));
   }
   private programCounter: DoubleWord;
+  set pc(value: DoubleWord) {
+    this.programCounter = value;
+    this.registerListeners.forEach((listener) => listener(this));
+  }
+  get pc() {
+    return this.programCounter;
+  }
   private registerListeners: ((cpu: CPU) => void)[];
 
   private memory: Memory;
@@ -108,9 +116,9 @@ export class CPU {
 
   toggleStatus(position: number) {
     if (position < 0 || position > 7) return;
-    const status = this.registers[ByteRegister.ps];
+    const status = this.reg[ByteRegister.ps];
     status.value ^= 1 << position;
-    this.setByteRegister(ByteRegister.ps, status);
+    this.reg[ByteRegister.ps] = status;
   }
   writeMemory(address: DoubleWord, value: Word) {
     this.memory.writeByte(address, value);
@@ -121,12 +129,6 @@ export class CPU {
   }
   addRegisterListener(listener: (cpu: CPU) => void) {
     this.registerListeners.push(listener);
-  }
-
-  setByteRegister(register: ByteRegister, value: Word) {
-    const oldReg = this.registers;
-    oldReg[register] = value;
-    this.reg = oldReg;
   }
   setProgramCounter(value: DoubleWord) {
     this.programCounter = value;
@@ -214,7 +216,7 @@ function clampWord(value: Word | DoubleWord): Word {
   return value;
 }
 
-function getMemoryAddress(
+export function getMemoryAddress(
   registers: CPURegisters,
   memory: Memory,
   mode: AddressingMode,
@@ -270,6 +272,6 @@ function getMemoryAddress(
       return new DoubleWord(least.value | (most.value << 8));
     }
     default:
-      throw new MemoryError(`Invalid addressing mode: ${mode}`);
+      throw new MemoryError(`Invalid addressing mode: ${AddressingMode[mode]}`);
   }
 }

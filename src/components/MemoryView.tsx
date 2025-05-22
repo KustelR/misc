@@ -24,7 +24,7 @@ export default function MemoryView(props: {
           newCells.push(999);
         }
         const address = new DoubleWord((y + offsetY) * 16 + x);
-        const value = cpu.memory.readByte(address);
+        const value = cpu.mem.readByte(address);
         newCells.push(value.value);
       }
     }
@@ -37,13 +37,13 @@ export default function MemoryView(props: {
             newCells.push(999);
           }
           const address = new DoubleWord((y + offsetY) * 16 + x);
-          const value = cpu.memory.readByte(address);
+          const value = cpu.mem.readByte(address);
           newCells.push(value.value);
         }
       }
       setCells(newCells);
     });
-  }, [cpu.memory, offsetY, height]);
+  }, [cpu.mem, offsetY, height]);
   return (
     <div className="">
       <header className="bg-white/10 flex justify-center items-center px-2">

@@ -8,14 +8,12 @@ import { useEffect, useState } from "react";
 
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
-  const [registers, setRegisters] = useState<CPURegisters>(cpu.registers);
-  const [programCounter, setProgramCounter] = useState<DoubleWord>(
-    cpu.programCounter,
-  );
+  const [registers, setRegisters] = useState<CPURegisters>(cpu.reg);
+  const [programCounter, setProgramCounter] = useState<DoubleWord>(cpu.pc);
   useEffect(() => {
     cpu.addRegisterListener((c) => {
-      setRegisters({ ...c.registers });
-      setProgramCounter(c.programCounter);
+      setRegisters({ ...c.reg });
+      setProgramCounter(c.pc);
     });
   }, [cpu]);
 

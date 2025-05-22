@@ -1,4 +1,4 @@
-import { sta, inx, adc, lda } from "./cpu-instructions";
+import { sta, inx, adc, lda, ldx, ldy } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
   AddressingMode,
@@ -153,18 +153,21 @@ export class CPU {
         adc.call(this, instruction);
         break;
       }
-      case CommandType.sta: {
+      case CommandType.sta:
         sta.call(this, instruction);
         break;
-      }
-      case CommandType.inx: {
+      case CommandType.inx:
         inx.call(this);
         break;
-      }
-      case CommandType.lda: {
+      case CommandType.lda:
         lda.call(this, instruction);
         break;
-      }
+      case CommandType.ldx:
+        ldx.call(this, instruction);
+        break;
+      case CommandType.ldy:
+        ldy.call(this, instruction);
+        break;
       default: {
         throw new Error(
           `Unknown instruction: ${CommandType[instruction.command.commandType]}`,

@@ -1,4 +1,4 @@
-import { ByteRegister, CPU } from "../cpu";
+import { arithmeticResultFlags, ByteRegister, CPU } from "../cpu";
 import { Instruction } from "../instructions";
 
 export default function ldy(this: CPU, instruction: Instruction) {
@@ -7,4 +7,5 @@ export default function ldy(this: CPU, instruction: Instruction) {
     instruction.trailingBytes,
   );
   this.reg[ByteRegister.idy] = value;
+  this.updateArithmeticStatuses(arithmeticResultFlags(value));
 }

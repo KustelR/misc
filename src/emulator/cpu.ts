@@ -113,8 +113,18 @@ export class CPU {
   getProcessorStatus(): ProcessorStatus {
     return statusFromReg(this.registers[ByteRegister.ps]);
   }
+  updateArithmeticStatuses(data: {
+    negative: boolean;
+    carry: boolean;
+    zero: boolean;
+  }) {
+    this.reg[ByteRegister.ps] = statusToReg({
+      ...this.getProcessorStatus(),
+      ...data,
+    });
+  }
 
-  toggleStatus(position: number) {
+  toggleStatus(position: StatusPosition) {
     if (position < 0 || position > 7) return;
     const status = this.reg[ByteRegister.ps];
     status.value ^= 1 << position;
@@ -277,4 +287,13 @@ export function getMemoryAddress(
     default:
       throw new MemoryError(`Invalid addressing mode: ${AddressingMode[mode]}`);
   }
+}
+
+export function arithmeticResultFlags(value: number | Word) {
+  const result = value instanceof Word ? value.value : value;
+  return {
+    negative: (result & 0x80) !== 0,
+    zero: result === 0,
+    carry: result > 0xff,
+  };
 }

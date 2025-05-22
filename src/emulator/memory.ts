@@ -16,9 +16,9 @@ class Word {
     return (this.value >> index) & 1;
   }
 
-  sum(val: Word): { value: Word; isOverflown: boolean } {
+  sum(val: Word): { value: Word; raw: number; isOverflown: boolean } {
     const res = this.value + val.value;
-    return { value: new Word(res % 256), isOverflown: res > 255 };
+    return { value: new Word(res % 256), raw: res, isOverflown: res > 255 };
   }
   value: number;
 }

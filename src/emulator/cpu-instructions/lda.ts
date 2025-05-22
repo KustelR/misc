@@ -1,4 +1,4 @@
-import { ByteRegister, CPU, getMemoryAddress } from "../cpu";
+import { arithmeticResultFlags, ByteRegister, CPU } from "../cpu";
 import { Instruction } from "../instructions";
 
 export default function lda(this: CPU, instruction: Instruction) {
@@ -7,4 +7,5 @@ export default function lda(this: CPU, instruction: Instruction) {
     instruction.trailingBytes,
   );
   this.reg[ByteRegister.ida] = value;
+  this.updateArithmeticStatuses(arithmeticResultFlags(value));
 }

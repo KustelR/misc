@@ -11,6 +11,12 @@ import {
   tay,
   txa,
   tya,
+  tsx,
+  txs,
+  plp,
+  pla,
+  php,
+  pha,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -147,7 +153,7 @@ export class CPU {
     this.reg[ByteRegister.sp] = this.reg[ByteRegister.sp].increment().value;
     this.stack.push(value, this.reg[ByteRegister.sp]);
   }
-  pull(): Word {
+  pullStack(): Word {
     const result = this.stack.pull(this.reg[ByteRegister.sp]);
     this.reg[ByteRegister.sp] = this.reg[ByteRegister.sp].decrement().value;
     return result;
@@ -224,6 +230,24 @@ export class CPU {
         break;
       case CommandType.tya:
         tya.call(this);
+        break;
+      case CommandType.tsx:
+        tsx.call(this);
+        break;
+      case CommandType.txs:
+        txs.call(this);
+        break;
+      case CommandType.pha:
+        pha.call(this);
+        break;
+      case CommandType.php:
+        php.call(this);
+        break;
+      case CommandType.pla:
+        pla.call(this);
+        break;
+      case CommandType.plp:
+        plp.call(this);
         break;
       default: {
         throw new Error(

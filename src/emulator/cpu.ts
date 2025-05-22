@@ -1,4 +1,17 @@
-import { sta, inx, adc, lda, ldx, ldy } from "./cpu-instructions";
+import {
+  sta,
+  inx,
+  adc,
+  lda,
+  ldx,
+  ldy,
+  stx,
+  sty,
+  tax,
+  tay,
+  txa,
+  tya,
+} from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
   AddressingMode,
@@ -177,6 +190,24 @@ export class CPU {
         break;
       case CommandType.ldy:
         ldy.call(this, instruction);
+        break;
+      case CommandType.stx:
+        stx.call(this, instruction);
+        break;
+      case CommandType.sty:
+        sty.call(this, instruction);
+        break;
+      case CommandType.tax:
+        tax.call(this);
+        break;
+      case CommandType.tay:
+        tay.call(this);
+        break;
+      case CommandType.txa:
+        txa.call(this);
+        break;
+      case CommandType.tya:
+        tya.call(this);
         break;
       default: {
         throw new Error(

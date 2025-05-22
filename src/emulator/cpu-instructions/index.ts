@@ -1,6 +1,12 @@
 export { default as inx } from "./inx";
 export { default as sta } from "./sta";
+export { default as stx } from "./stx";
+export { default as sty } from "./sty";
 export { default as adc } from "./adc";
 export { default as lda } from "./lda";
 export { default as ldx } from "./ldx";
 export { default as ldy } from "./ldy";
+export { default as tax } from "./tax";
+export { default as tay } from "./tay";
+export { default as txa } from "./txa";
+export { default as tya } from "./tya";

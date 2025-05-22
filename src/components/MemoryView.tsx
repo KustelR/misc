@@ -25,7 +25,7 @@ export default function MemoryView(props: {
         }
         const address = new DoubleWord((y + offsetY) * 16 + x);
         const value = cpu.memory.readByte(address);
-        newCells.push(value.toNumber());
+        newCells.push(value.value);
       }
     }
     setCells(newCells);
@@ -38,7 +38,7 @@ export default function MemoryView(props: {
           }
           const address = new DoubleWord((y + offsetY) * 16 + x);
           const value = cpu.memory.readByte(address);
-          newCells.push(value.toNumber());
+          newCells.push(value.value);
         }
       }
       setCells(newCells);

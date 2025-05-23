@@ -3,9 +3,9 @@ import Link from "next/link";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen w-screen overflow-clip flex flex-col font-[family-name:var(--font-geist-mono)]">
+    <div className="h-screen w-screen md:overflow-clip flex flex-col font-[family-name:var(--font-geist-mono)]">
       <AppHeader />
-      <div className="flex flex-1 overflow-hidden flex-row p-3 space-x-4">
+      <div className="flex flex-1 flex-col md:overflow-hidden md:flex-row p-3 md:space-x-4 space-y-4">
         <EmulatorNav />
         {children}
       </div>

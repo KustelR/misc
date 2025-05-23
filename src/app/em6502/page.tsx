@@ -36,7 +36,7 @@ export default function () {
     cpu.start(10);
   }, [cpu]);
   return (
-    <main className="flex flex-row space-x-6 flex-1 space-y-4">
+    <main className="flex flex-col md:flex-row space-x-6 flex-1 space-y-4">
       <CodeView />
       <CPUStateView cpu={cpu} />
     </main>
@@ -45,7 +45,7 @@ export default function () {
 
 function CodeView() {
   return (
-    <div className="h-full flex flex-col bg-neutral-800">
+    <div className="h-screen w-full md:h-full md:flex-1 flex flex-col bg-neutral-800">
       <header className="bg-white/10 w-full px-2">Code</header>
       <Editor />
     </div>

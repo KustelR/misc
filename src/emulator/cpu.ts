@@ -21,6 +21,10 @@ import {
   eor,
   ora,
   bit,
+  sbc,
+  cmp,
+  cpx,
+  cpy,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -273,6 +277,18 @@ export class CPU {
         break;
       case CommandType.bit:
         bit.call(this, instruction);
+        break;
+      case CommandType.sbc:
+        sbc.call(this, instruction);
+        break;
+      case CommandType.cmp:
+        cmp.call(this, instruction);
+        break;
+      case CommandType.cpx:
+        cpx.call(this, instruction);
+        break;
+      case CommandType.cpy:
+        cpy.call(this, instruction);
         break;
       default: {
         throw new Error(

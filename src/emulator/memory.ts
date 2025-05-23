@@ -27,6 +27,17 @@ class Word {
     const res = this.value + val.value;
     return { value: new Word(res % 256), raw: res, isOverflown: res > 255 };
   }
+  sub(val: Word): { value: Word; raw: number; isOverflown: boolean } {
+    const raw =
+      (this.value & 0x80) * (this.isNegative() ? -1 : 1) -
+      (val.value & 0x80) * (val.isNegative() ? -1 : 1);
+    const res = this.value - val.value;
+    return {
+      value: new Word(res),
+      raw: raw,
+      isOverflown: raw !== res,
+    };
+  }
   and(val: Word): Word {
     return new Word(this.value & val.value);
   }
@@ -35,6 +46,9 @@ class Word {
   }
   or(val: Word): Word {
     return new Word(this.value | val.value);
+  }
+  isNegative(): boolean {
+    return this.bit(7) === 1;
   }
   value: number;
 }

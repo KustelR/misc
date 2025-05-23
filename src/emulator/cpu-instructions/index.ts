@@ -20,3 +20,7 @@ export { default as and } from "./and";
 export { default as eor } from "./eor";
 export { default as ora } from "./ora";
 export { default as bit } from "./bit";
+export { default as sbc } from "./sbc";
+export { default as cmp } from "./cmp";
+export { default as cpx } from "./cpx";
+export { default as cpy } from "./cpy";

@@ -7,7 +7,7 @@ import { AddressingMode, CommandType } from "@/emulator/instructions";
 import { DoubleWord, Word } from "@/emulator/memory";
 import { useEffect, useState } from "react";
 
-const PROGRAM_START = 0x1000;
+const PROGRAM_START = 0x600;
 
 export default function () {
   const [cpu, setCpu] = useState(new CPU());
@@ -20,18 +20,20 @@ export default function () {
   useEffect(() => {
     cpu.pc = new DoubleWord(PROGRAM_START);
     let pc = new DoubleWord(PROGRAM_START);
-    function inc() {
+    function writeAndInc(val: number) {
+      cpu.writeMemory(pc, new Word(val));
       pc = new DoubleWord(pc.value + 1);
     }
-    cpu.writeMemory(pc, new Word(0xa9));
+    writeAndInc(0xa6);
+    writeAndInc(0x0);
+    writeAndInc(0xe8);
+    writeAndInc(0x86);
+    writeAndInc(0x0);
+    writeAndInc(0x4c);
+    writeAndInc(0xff);
+    writeAndInc(0x5);
     inc();
-    cpu.writeMemory(pc, new Word(0x2));
-    inc();
-    cpu.writeMemory(pc, new Word(0x85));
-    inc();
-    cpu.writeMemory(pc, new Word(0x0));
-    inc();
-    cpu.start();
+    cpu.start(10);
   }, [cpu]);
   return (
     <main className="flex flex-row space-x-6 flex-1 space-y-4">

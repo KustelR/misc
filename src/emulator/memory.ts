@@ -55,7 +55,7 @@ class Word {
 
 class DoubleWord {
   constructor(data: number) {
-    if (data < 0 || data > 65535) {
+    if (data < 0 || data > 0xffff) {
       throw new Error("Invalid double word");
     }
     this.value = data;

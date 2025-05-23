@@ -397,22 +397,23 @@ export class CPU {
     return { instruction, offset: argsLength };
   }
 
-  start() {
-    while (true) {
+  async start(speed: number) {
+    const interval = setInterval(() => {
       const { instruction, offset } = this.readInstruction();
+      console.log(CommandType[instruction.command.commandType]);
       if (instruction.command.commandType == CommandType.brk) {
         this.toggleStatus(StatusPosition.brkCommand);
         this.programCounter.increment();
-        break;
+        clearInterval(interval);
       }
       this.execute(instruction);
       this.programCounter = this.programCounter.sum(
         new DoubleWord(offset),
       ).value;
       this.programCounter.increment();
-    }
-    this.registerListeners.forEach((listener) => listener(this));
-    this.memoryListeners.forEach((listener) => listener(this.memory));
+      this.registerListeners.forEach((listener) => listener(this));
+      this.memoryListeners.forEach((listener) => listener(this.memory));
+    }, speed);
   }
 }
 

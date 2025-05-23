@@ -400,7 +400,6 @@ export class CPU {
   async start(speed: number) {
     const interval = setInterval(() => {
       const { instruction, offset } = this.readInstruction();
-      console.log(CommandType[instruction.command.commandType]);
       if (instruction.command.commandType == CommandType.brk) {
         this.toggleStatus(StatusPosition.brkCommand);
         this.programCounter.increment();

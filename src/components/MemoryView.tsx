@@ -125,7 +125,7 @@ function MemoryCell(props: { value: number }) {
       }}
       className="flex flex-row items-center justify-center"
     >
-      <p className="mix-blend-exclusion">{value}</p>
+      <p className="mix-blend-exclusion">{formatByte(value, true, true)}</p>
     </div>
   );
 }

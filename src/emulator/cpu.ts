@@ -37,6 +37,14 @@ import {
   jsr,
   jmp,
   rts,
+  bcc,
+  bcs,
+  bvs,
+  bvc,
+  bpl,
+  bne,
+  bmi,
+  beq,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -212,6 +220,7 @@ export class CPU {
   getValue(mode: AddressingMode, data: Word[]) {
     switch (mode) {
       case AddressingMode.immediate:
+      case AddressingMode.relative:
         return data[0];
       case AddressingMode.accumulator:
         return this.reg[ByteRegister.ida];
@@ -339,6 +348,32 @@ export class CPU {
         break;
       case CommandType.rts:
         rts.call(this);
+        break;
+      case CommandType.bcc:
+        bcc.call(this, instruction);
+        break;
+      case CommandType.bcs:
+        bcs.call(this, instruction);
+        break;
+      case CommandType.beq:
+        beq.call(this, instruction);
+        break;
+      case CommandType.bmi:
+        bmi.call(this, instruction);
+        break;
+      case CommandType.bne:
+        bne.call(this, instruction);
+        break;
+      case CommandType.bpl:
+        bpl.call(this, instruction);
+        break;
+      case CommandType.bvc:
+        bvc.call(this, instruction);
+        break;
+      case CommandType.bvs:
+        bvs.call(this, instruction);
+        break;
+      case CommandType.nop:
         break;
       default: {
         throw new Error(

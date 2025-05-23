@@ -131,12 +131,10 @@ function MemoryCell(props: { value: number }) {
 }
 
 function getColor(value: number) {
-  switch (value) {
-    case 0:
-      return "#000000";
-    case 1:
-      return "#FFFFFF";
-    case 2:
-      return "#FF0000";
-  }
+  if (value === 0) return "#000000";
+  if (value === 1) return "#ffffff";
+  const red = (value & 0x7) / 7;
+  const green = ((value >> 3) & 0x7) / 7;
+  const blue = ((value >> 6) & 0x7) / 7;
+  return `rgba(${red * 255}, ${green * 255}, ${blue * 255}, 1)`;
 }

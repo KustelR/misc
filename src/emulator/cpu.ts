@@ -25,6 +25,15 @@ import {
   cmp,
   cpx,
   cpy,
+  inc,
+  iny,
+  dec,
+  dex,
+  dey,
+  ror,
+  rol,
+  lsr,
+  asl,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -201,6 +210,8 @@ export class CPU {
     switch (mode) {
       case AddressingMode.immediate:
         return data[0];
+      case AddressingMode.accumulator:
+        return this.reg[ByteRegister.ida];
       case AddressingMode.zeroPage:
       default:
         return this.memory.readByte(
@@ -218,8 +229,23 @@ export class CPU {
       case CommandType.sta:
         sta.call(this, instruction);
         break;
+      case CommandType.inc:
+        inc.call(this, instruction);
+        break;
       case CommandType.inx:
         inx.call(this);
+        break;
+      case CommandType.iny:
+        iny.call(this);
+        break;
+      case CommandType.dec:
+        dec.call(this, instruction);
+        break;
+      case CommandType.dex:
+        dex.call(this);
+        break;
+      case CommandType.dey:
+        dey.call(this);
         break;
       case CommandType.lda:
         lda.call(this, instruction);
@@ -289,6 +315,18 @@ export class CPU {
         break;
       case CommandType.cpy:
         cpy.call(this, instruction);
+        break;
+      case CommandType.asl:
+        asl.call(this, instruction);
+        break;
+      case CommandType.lsr:
+        lsr.call(this, instruction);
+        break;
+      case CommandType.rol:
+        rol.call(this, instruction);
+        break;
+      case CommandType.ror:
+        ror.call(this, instruction);
         break;
       default: {
         throw new Error(

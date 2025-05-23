@@ -1,4 +1,9 @@
+export { default as inc } from "./inc";
 export { default as inx } from "./inx";
+export { default as iny } from "./iny";
+export { default as dec } from "./dec";
+export { default as dex } from "./dex";
+export { default as dey } from "./dey";
 export { default as sta } from "./sta";
 export { default as stx } from "./stx";
 export { default as sty } from "./sty";
@@ -24,3 +29,7 @@ export { default as sbc } from "./sbc";
 export { default as cmp } from "./cmp";
 export { default as cpx } from "./cpx";
 export { default as cpy } from "./cpy";
+export { default as asl } from "./asl";
+export { default as lsr } from "./lsr";
+export { default as rol } from "./rol";
+export { default as ror } from "./ror";

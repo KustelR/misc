@@ -64,6 +64,9 @@ class DoubleWord {
   least(): Word {
     return new Word(this.value & 0xff);
   }
+  most(): Word {
+    return new Word(this.value >> 8);
+  }
   increment(): { value: DoubleWord; isOverflown: boolean } {
     this.value = (this.value + 1) & 0xffff;
     return { value: this, isOverflown: this.value === 0 };

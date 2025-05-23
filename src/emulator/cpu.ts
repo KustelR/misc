@@ -34,6 +34,9 @@ import {
   rol,
   lsr,
   asl,
+  jsr,
+  jmp,
+  rts,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -327,6 +330,15 @@ export class CPU {
         break;
       case CommandType.ror:
         ror.call(this, instruction);
+        break;
+      case CommandType.jmp:
+        jmp.call(this, instruction);
+        break;
+      case CommandType.jsr:
+        jsr.call(this, instruction);
+        break;
+      case CommandType.rts:
+        rts.call(this);
         break;
       default: {
         throw new Error(

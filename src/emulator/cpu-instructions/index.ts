@@ -33,3 +33,6 @@ export { default as asl } from "./asl";
 export { default as lsr } from "./lsr";
 export { default as rol } from "./rol";
 export { default as ror } from "./ror";
+export { default as jmp } from "./jmp";
+export { default as jsr } from "./jsr";
+export { default as rts } from "./rts";

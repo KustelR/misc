@@ -18,7 +18,7 @@ export default function () {
     setProgramCounter(new DoubleWord(programCounter.value + 1));
   }
   useEffect(() => {
-    cpu.pc = new DoubleWord(PROGRAM_START);
+    cpu.pc = new DoubleWord(PROGRAM_START - 1);
     let pc = new DoubleWord(PROGRAM_START);
     function writeAndInc(val: number) {
       cpu.writeMemory(pc, new Word(val));
@@ -29,11 +29,11 @@ export default function () {
     writeAndInc(0xe8);
     writeAndInc(0x86);
     writeAndInc(0x0);
-    //writeAndInc(0x4c);
-    //writeAndInc(0xff);
-    //writeAndInc(0x5);
+    writeAndInc(0x4c);
+    writeAndInc(0xff);
+    writeAndInc(0x5);
     inc();
-    cpu.start(10);
+    cpu.start(1);
   }, [cpu]);
   return (
     <main className="flex flex-col md:flex-row space-x-6 flex-1 space-y-4">

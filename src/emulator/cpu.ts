@@ -141,9 +141,13 @@ export class CPU {
 
   private cycles: number = 0;
   private cyclesListeners: ((cycles: number) => void)[] = [];
-
   addCyclesListener(listener: (cycles: number) => void) {
     this.cyclesListeners.push(listener);
+  }
+
+  private isForceStopped: boolean = false;
+  stop() {
+    this.isForceStopped = true;
   }
 
   private registers: CPURegisters;
@@ -436,12 +440,16 @@ export class CPU {
 
   async start(speed: number) {
     const interval = setInterval(async () => {
-      if (this.reg[ByteRegister.ps].bit(StatusPosition.brkCommand)) {
+      if (
+        this.reg[ByteRegister.ps].bit(StatusPosition.brkCommand) ||
+        this.isForceStopped
+      ) {
         clearInterval(interval);
       }
       await this.step();
     }, speed);
   }
+
   async step() {
     this.cycles++;
     this.cyclesListeners.forEach((listener) => listener(this.cycles));

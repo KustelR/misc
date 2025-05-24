@@ -45,6 +45,13 @@ import {
   bne,
   bmi,
   beq,
+  sec,
+  sei,
+  sed,
+  clv,
+  cli,
+  cld,
+  clc,
 } from "./cpu-instructions";
 import { MemoryError } from "./errors";
 import {
@@ -232,7 +239,7 @@ export class CPU {
     }
   }
 
-  execute(instruction: Instruction) {
+  execute(instruction: Instruction): void | "break" {
     switch (instruction.command.commandType) {
       case CommandType.adc: {
         adc.call(this, instruction);
@@ -372,6 +379,27 @@ export class CPU {
         break;
       case CommandType.bvs:
         bvs.call(this, instruction);
+        break;
+      case CommandType.sec:
+        sec.call(this);
+        break;
+      case CommandType.sed:
+        sed.call(this);
+        break;
+      case CommandType.sei:
+        sei.call(this);
+        break;
+      case CommandType.clc:
+        clc.call(this);
+        break;
+      case CommandType.cld:
+        cld.call(this);
+        break;
+      case CommandType.cli:
+        cli.call(this);
+        break;
+      case CommandType.clv:
+        clv.call(this);
         break;
       case CommandType.nop:
         break;

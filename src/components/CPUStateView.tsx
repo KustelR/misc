@@ -31,7 +31,7 @@ export default function CPUStateView(props: { cpu: CPU }) {
         />
         <Flags {...cpu.getProcessorStatus()} />
         <MemoryView cpu={cpu} height={16} />
-        <button onClick={() => console.log(cpu)}>JSON</button>
+        <Meta cpu={cpu} />
       </div>
     </div>
   );
@@ -112,6 +112,20 @@ function FlagView(props: { header: string; value: boolean }) {
       >
         {value ? "true" : "false"}
       </div>
+    </div>
+  );
+}
+
+function Meta(props: { cpu: CPU }) {
+  const { cpu } = props;
+  const [cycles, setCycles] = useState(0);
+  useEffect(() => {
+    cpu.addCyclesListener(setCycles);
+  }, [cpu]);
+  return (
+    <div>
+      <h2 className="bg-white/10 px-1">Meta</h2>
+      <p>Cycles: {cycles}</p>
     </div>
   );
 }

@@ -139,6 +139,13 @@ export class CPU {
     this.registerListeners = [];
   }
 
+  private cycles: number = 0;
+  private cyclesListeners: ((cycles: number) => void)[] = [];
+
+  addCyclesListener(listener: (cycles: number) => void) {
+    this.cyclesListeners.push(listener);
+  }
+
   private registers: CPURegisters;
   private programCounter: DoubleWord;
   private memoryListeners: ((m: Memory) => void)[];
@@ -239,7 +246,7 @@ export class CPU {
     }
   }
 
-  execute(instruction: Instruction): void | "break" {
+  async execute(instruction: Instruction): Promise<void | "break"> {
     switch (instruction.command.commandType) {
       case CommandType.adc: {
         adc.call(this, instruction);
@@ -403,6 +410,8 @@ export class CPU {
         break;
       case CommandType.nop:
         break;
+      case CommandType.brk:
+        return "break";
       default: {
         throw new Error(
           `Unknown instruction: ${CommandType[instruction.command.commandType]}`,
@@ -426,21 +435,26 @@ export class CPU {
   }
 
   async start(speed: number) {
-    const interval = setInterval(() => {
-      const { instruction, offset } = this.readInstruction();
-      if (instruction.command.commandType == CommandType.brk) {
-        this.toggleStatus(StatusPosition.brkCommand);
-        this.programCounter.increment();
+    const interval = setInterval(async () => {
+      if (this.reg[ByteRegister.ps].bit(StatusPosition.brkCommand)) {
         clearInterval(interval);
       }
-      this.execute(instruction);
-      this.programCounter = this.programCounter.sum(
-        new DoubleWord(offset),
-      ).value;
-      this.programCounter.increment();
-      this.registerListeners.forEach((listener) => listener(this));
-      this.memoryListeners.forEach((listener) => listener(this.memory));
+      await this.step();
     }, speed);
+  }
+  async step() {
+    this.cycles++;
+    this.cyclesListeners.forEach((listener) => listener(this.cycles));
+
+    this.programCounter = this.programCounter.sum(1).value;
+    const { instruction, offset } = this.readInstruction();
+    const res = await this.execute(instruction);
+    if (res === "break") {
+      this.setStatus(StatusPosition.brkCommand, true);
+    }
+    this.programCounter = this.programCounter.sum(new DoubleWord(offset)).value;
+    this.registerListeners.forEach((listener) => listener(this));
+    this.memoryListeners.forEach((listener) => listener(this.memory));
   }
 }
 

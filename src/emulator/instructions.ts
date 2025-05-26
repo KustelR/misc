@@ -126,6 +126,14 @@ export function byteToCmd(data: Word): Command | undefined {
   return instructionSet[data.value];
 }
 
+export function cmdToByte(cmd: Command): Word | undefined {
+  return new Word(bytesByCommand[cmd.commandType][cmd.addressingMode]);
+}
+
+export function getAddressingModes(cmdType: CommandType) {
+  return bytesByCommand[cmdType];
+}
+
 const instructionSet: Record<number, Command | undefined> = {
   // * ADC
   0x69: {
@@ -723,3 +731,15 @@ const instructionSet: Record<number, Command | undefined> = {
     addressingMode: AddressingMode.implied,
   },
 };
+
+let bytesByCommand: Record<
+  CommandType,
+  Record<AddressingMode, number>
+> = {} as any;
+
+for (const [byte, { commandType, addressingMode }] of Object.entries(
+  instructionSet as Record<number, Command>,
+)) {
+  bytesByCommand[commandType] = bytesByCommand[commandType] || {};
+  bytesByCommand[commandType][addressingMode] = Number(byte);
+}

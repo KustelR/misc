@@ -29,9 +29,9 @@ export default function () {
     writeAndInc(0xe8);
     writeAndInc(0x86);
     writeAndInc(0x0);
-    writeAndInc(0x4c);
-    writeAndInc(0xff);
-    writeAndInc(0x5);
+    //writeAndInc(0x4c);
+    //writeAndInc(0xff);
+    //writeAndInc(0x5);
     inc();
     cpu.start(1);
   }, [cpu]);

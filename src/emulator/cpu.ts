@@ -198,6 +198,23 @@ export class CPU {
     });
   }
 
+  reset() {
+    this.memory = new Memory();
+    this.registers = {
+      [ByteRegister.ida]: new Word(0x0),
+      [ByteRegister.idx]: new Word(0x0),
+      [ByteRegister.idy]: new Word(0x0),
+      [ByteRegister.sp]: new Word(0x0),
+      [ByteRegister.ps]: new Word(0x0),
+    };
+    this.programCounter = new DoubleWord(0x0);
+    this.stack = new Stack();
+
+    this.memoryListeners.forEach((listener) => listener(this.memory));
+    this.registerListeners.forEach((listener) => listener(this));
+    this.cyclesListeners.forEach((listener) => listener(this.cycles));
+  }
+
   pushStack(value: Word) {
     this.reg[ByteRegister.sp] = this.reg[ByteRegister.sp].increment().value;
     this.stack.push(value, this.reg[ByteRegister.sp]);

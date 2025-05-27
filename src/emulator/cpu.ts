@@ -146,8 +146,11 @@ export class CPU {
   }
 
   private isForceStopped: boolean = false;
-  stop() {
+  pause() {
     this.isForceStopped = true;
+  }
+  unpause() {
+    this.isForceStopped = false;
   }
 
   private registers: CPURegisters;
@@ -294,8 +297,8 @@ and arg bytes: ${JSON.stringify(instruction.trailingBytes.map((byte) => byte.val
     this.cycles++;
     this.cyclesListeners.forEach((listener) => listener(this.cycles));
 
-    this.programCounter = this.programCounter.sum(1).value;
     const { instruction, offset } = this.readInstruction();
+    this.programCounter = this.programCounter.sum(1).value;
     this.programCounter = this.programCounter.sum(new DoubleWord(offset)).value;
     const res = await this.execute(instruction);
     if (res === "break") {

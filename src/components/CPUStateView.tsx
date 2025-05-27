@@ -130,7 +130,7 @@ function Meta(props: { cpu: CPU }) {
         <div className="flex flex-row space-x-2 space-y-2 flex-wrap h-fit w-full">
           <button
             className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.stop()}
+            onClick={() => cpu.pause()}
           >
             stop
           </button>

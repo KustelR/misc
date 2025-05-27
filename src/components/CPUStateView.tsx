@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
   const [registers, setRegisters] = useState<CPURegisters>(cpu.reg);
+  const [isDebug, setIsDebug] = useState(true);
   const [programCounter, setProgramCounter] = useState<DoubleWord>(cpu.pc);
   useEffect(() => {
     cpu.addRegisterListener((c) => {
@@ -18,20 +19,24 @@ export default function CPUStateView(props: { cpu: CPU }) {
   }, [cpu]);
 
   return (
-    <div className="h-full flex flex-col bg-neutral-800 space-y-2 overflow-y-auto">
+    <div className="h-full flex-1/4 flex flex-col bg-neutral-800 space-y-2 overflow-y-auto">
       <header className="bg-white/10 w-full px-2">CPU State</header>
       <div className="flex flex-row flex-wrap p-2 space-x-2 space-y-2">
-        <ByteView header="IDA" value={registers[ByteRegister.ida].value} />
-        <ByteView header="IDX" value={registers[ByteRegister.idx].value} />
-        <ByteView header="IDY" value={registers[ByteRegister.idy].value} />
-        <ProgramCounter value={programCounter.value} />
-        <ByteView
-          header="Stack Pointer"
-          value={registers[ByteRegister.sp].value}
-        />
-        <Flags {...cpu.getProcessorStatus()} />
-        <MemoryView cpu={cpu} height={16} />
-        <Meta cpu={cpu} />
+        {isDebug && (
+          <>
+            <ByteView header="IDA" value={registers[ByteRegister.ida].value} />
+            <ByteView header="IDX" value={registers[ByteRegister.idx].value} />
+            <ByteView header="IDY" value={registers[ByteRegister.idy].value} />
+            <ProgramCounter value={programCounter.value} />
+            <ByteView
+              header="Stack Pointer"
+              value={registers[ByteRegister.sp].value}
+            />
+            <Flags {...cpu.getProcessorStatus()} />
+            <MemoryView cpu={cpu} height={16} />
+          </>
+        )}
+        <Meta cpu={cpu} setIsDebug={setIsDebug} isDebug={isDebug} />
       </div>
     </div>
   );
@@ -116,8 +121,13 @@ function FlagView(props: { header: string; value: boolean }) {
   );
 }
 
-function Meta(props: { cpu: CPU }) {
-  const { cpu } = props;
+function Meta(props: {
+  cpu: CPU;
+  isDebug: boolean;
+  setIsDebug: (arg: boolean) => void;
+  setSpeed?: (arg: number) => void;
+}) {
+  const { cpu, setIsDebug, isDebug } = props;
   const [cycles, setCycles] = useState(0);
   useEffect(() => {
     cpu.addCyclesListener(setCycles);
@@ -151,6 +161,12 @@ function Meta(props: { cpu: CPU }) {
             onClick={() => cpu.reset()}
           >
             reset
+          </button>
+          <button
+            className="bg-red-600/15 px-1 cursor-pointer h-fit"
+            onClick={() => setIsDebug(!isDebug)}
+          >
+            debug
           </button>
         </div>
       </div>

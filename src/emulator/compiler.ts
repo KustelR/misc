@@ -8,7 +8,8 @@ import { Word } from "./memory";
 
 const tokenRegex = /([;:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)/gm;
 const labelDeclarationRegex = /^([a-zA-Z_][a-zA-Z0-9_]*):$/;
-const byteRegex = /[0-9a-f]{2}/gm;
+const byteRegex = /[0-9a-f]{1,2}/gm;
+const signRegex = /^[+-]/gm;
 
 const accumulatorAddressRegex = /^A$/;
 const zeroPageAddressRegex = /\$[0-9a-f]{2}$/gm;
@@ -94,7 +95,7 @@ function getAddressMode(
   if (zeroPageYAddressRegex.test(addressToken)) {
     return AddressingMode.zeroPageY;
   }
-  if (addressToken.startsWith("*") || commandType === CommandType.jmp) {
+  if (addressToken.startsWith("*")) {
     return AddressingMode.relative;
   }
   throw new Error("Can't determine addressing mode");
@@ -102,6 +103,13 @@ function getAddressMode(
 
 function getArgumentBytes(token: string): Word[] {
   const match = token.match(byteRegex);
+  const sign = token.match(signRegex);
+  const isNegative = sign && sign[0] === "-";
   if (!match) throw new Error(`Invalid argument: ${token}`);
-  return match.map((byte) => new Word(parseInt(byte, 16))).reverse();
+  return match
+    .map(
+      (byte) =>
+        new Word(isNegative ? 0x80 | parseInt(byte, 16) : parseInt(byte, 16)),
+    )
+    .reverse();
 }

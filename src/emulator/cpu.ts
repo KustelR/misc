@@ -251,182 +251,13 @@ export class CPU {
   }
 
   async execute(instruction: Instruction): Promise<void | "break"> {
-    switch (instruction.command.commandType) {
-      case CommandType.adc: {
-        adc.call(this, instruction);
-        break;
-      }
-      case CommandType.sta:
-        sta.call(this, instruction);
-        break;
-      case CommandType.inc:
-        inc.call(this, instruction);
-        break;
-      case CommandType.inx:
-        inx.call(this);
-        break;
-      case CommandType.iny:
-        iny.call(this);
-        break;
-      case CommandType.dec:
-        dec.call(this, instruction);
-        break;
-      case CommandType.dex:
-        dex.call(this);
-        break;
-      case CommandType.dey:
-        dey.call(this);
-        break;
-      case CommandType.lda:
-        lda.call(this, instruction);
-        break;
-      case CommandType.ldx:
-        ldx.call(this, instruction);
-        break;
-      case CommandType.ldy:
-        ldy.call(this, instruction);
-        break;
-      case CommandType.stx:
-        stx.call(this, instruction);
-        break;
-      case CommandType.sty:
-        sty.call(this, instruction);
-        break;
-      case CommandType.tax:
-        tax.call(this);
-        break;
-      case CommandType.tay:
-        tay.call(this);
-        break;
-      case CommandType.txa:
-        txa.call(this);
-        break;
-      case CommandType.tya:
-        tya.call(this);
-        break;
-      case CommandType.tsx:
-        tsx.call(this);
-        break;
-      case CommandType.txs:
-        txs.call(this);
-        break;
-      case CommandType.pha:
-        pha.call(this);
-        break;
-      case CommandType.php:
-        php.call(this);
-        break;
-      case CommandType.pla:
-        pla.call(this);
-        break;
-      case CommandType.plp:
-        plp.call(this);
-        break;
-      case CommandType.and:
-        and.call(this, instruction);
-        break;
-      case CommandType.eor:
-        eor.call(this, instruction);
-        break;
-      case CommandType.ora:
-        ora.call(this, instruction);
-        break;
-      case CommandType.bit:
-        bit.call(this, instruction);
-        break;
-      case CommandType.sbc:
-        sbc.call(this, instruction);
-        break;
-      case CommandType.cmp:
-        cmp.call(this, instruction);
-        break;
-      case CommandType.cpx:
-        cpx.call(this, instruction);
-        break;
-      case CommandType.cpy:
-        cpy.call(this, instruction);
-        break;
-      case CommandType.asl:
-        asl.call(this, instruction);
-        break;
-      case CommandType.lsr:
-        lsr.call(this, instruction);
-        break;
-      case CommandType.rol:
-        rol.call(this, instruction);
-        break;
-      case CommandType.ror:
-        ror.call(this, instruction);
-        break;
-      case CommandType.jmp:
-        jmp.call(this, instruction);
-        break;
-      case CommandType.jsr:
-        jsr.call(this, instruction);
-        break;
-      case CommandType.rts:
-        rts.call(this);
-        break;
-      case CommandType.bcc:
-        bcc.call(this, instruction);
-        break;
-      case CommandType.bcs:
-        bcs.call(this, instruction);
-        break;
-      case CommandType.beq:
-        beq.call(this, instruction);
-        break;
-      case CommandType.bmi:
-        bmi.call(this, instruction);
-        break;
-      case CommandType.bne:
-        bne.call(this, instruction);
-        break;
-      case CommandType.bpl:
-        bpl.call(this, instruction);
-        break;
-      case CommandType.bvc:
-        bvc.call(this, instruction);
-        break;
-      case CommandType.bvs:
-        bvs.call(this, instruction);
-        break;
-      case CommandType.sec:
-        sec.call(this);
-        break;
-      case CommandType.sed:
-        sed.call(this);
-        break;
-      case CommandType.sei:
-        sei.call(this);
-        break;
-      case CommandType.clc:
-        clc.call(this);
-        break;
-      case CommandType.cld:
-        cld.call(this);
-        break;
-      case CommandType.cli:
-        cli.call(this);
-        break;
-      case CommandType.clv:
-        clv.call(this);
-        break;
-      case CommandType.nop:
-        break;
-      case CommandType.brk:
-        return "break";
-      default: {
-        throw new Error(
-          `Unknown instruction: ${CommandType[instruction.command.commandType]}`,
-        );
-      }
-    }
+    execute.call(this, instruction);
   }
-  readInstruction(): { instruction: Instruction; offset: number } {
-    const command = byteToCmd(this.memory.readByte(this.programCounter));
+  readInstruction(log?: boolean): { instruction: Instruction; offset: number } {
+    const instructionByte = this.memory.readByte(this.programCounter);
+    const command = byteToCmd(instructionByte);
     if (command === undefined) {
-      throw new Error("Invalid opcode");
+      throw new Error(`Invalid opcode: ${instructionByte.value}`);
     }
     const instruction: Instruction = { command, trailingBytes: [] };
     const argsLength = getArgumentLength(command.addressingMode);
@@ -435,10 +266,19 @@ export class CPU {
         this.memory.readByte(this.programCounter.sum(new DoubleWord(i)).value),
       );
     }
+    if (log) {
+      console.log(
+        `Byte 0x${instructionByte.value.toString(16)} at pos 0x${this.programCounter.value.toString(16)} 
+interpreted as  ${CommandType[command.commandType]} 
+with addressing mode: ${AddressingMode[command.addressingMode]} (len: ${argsLength})
+and arg bytes: ${JSON.stringify(instruction.trailingBytes.map((byte) => byte.value))}`,
+      );
+    }
     return { instruction, offset: argsLength };
   }
 
   async start(speed: number) {
+    this.isForceStopped = false;
     const interval = setInterval(async () => {
       if (
         this.reg[ByteRegister.ps].bit(StatusPosition.brkCommand) ||
@@ -453,14 +293,15 @@ export class CPU {
   async step() {
     this.cycles++;
     this.cyclesListeners.forEach((listener) => listener(this.cycles));
+    this.setStatus(StatusPosition.brkCommand, false);
 
     this.programCounter = this.programCounter.sum(1).value;
     const { instruction, offset } = this.readInstruction();
+    this.programCounter = this.programCounter.sum(new DoubleWord(offset)).value;
     const res = await this.execute(instruction);
     if (res === "break") {
       this.setStatus(StatusPosition.brkCommand, true);
     }
-    this.programCounter = this.programCounter.sum(new DoubleWord(offset)).value;
     this.registerListeners.forEach((listener) => listener(this));
     this.memoryListeners.forEach((listener) => listener(this.memory));
   }
@@ -543,4 +384,178 @@ export function arithmeticResultFlags(value: number | Word) {
     zero: result === 0,
     carry: result > 0xff,
   };
+}
+
+function execute(this: CPU, instruction: Instruction) {
+  switch (instruction.command.commandType) {
+    case CommandType.adc: {
+      adc.call(this, instruction);
+      break;
+    }
+    case CommandType.sta:
+      sta.call(this, instruction);
+      break;
+    case CommandType.inc:
+      inc.call(this, instruction);
+      break;
+    case CommandType.inx:
+      inx.call(this);
+      break;
+    case CommandType.iny:
+      iny.call(this);
+      break;
+    case CommandType.dec:
+      dec.call(this, instruction);
+      break;
+    case CommandType.dex:
+      dex.call(this);
+      break;
+    case CommandType.dey:
+      dey.call(this);
+      break;
+    case CommandType.lda:
+      lda.call(this, instruction);
+      break;
+    case CommandType.ldx:
+      ldx.call(this, instruction);
+      break;
+    case CommandType.ldy:
+      ldy.call(this, instruction);
+      break;
+    case CommandType.stx:
+      stx.call(this, instruction);
+      break;
+    case CommandType.sty:
+      sty.call(this, instruction);
+      break;
+    case CommandType.tax:
+      tax.call(this);
+      break;
+    case CommandType.tay:
+      tay.call(this);
+      break;
+    case CommandType.txa:
+      txa.call(this);
+      break;
+    case CommandType.tya:
+      tya.call(this);
+      break;
+    case CommandType.tsx:
+      tsx.call(this);
+      break;
+    case CommandType.txs:
+      txs.call(this);
+      break;
+    case CommandType.pha:
+      pha.call(this);
+      break;
+    case CommandType.php:
+      php.call(this);
+      break;
+    case CommandType.pla:
+      pla.call(this);
+      break;
+    case CommandType.plp:
+      plp.call(this);
+      break;
+    case CommandType.and:
+      and.call(this, instruction);
+      break;
+    case CommandType.eor:
+      eor.call(this, instruction);
+      break;
+    case CommandType.ora:
+      ora.call(this, instruction);
+      break;
+    case CommandType.bit:
+      bit.call(this, instruction);
+      break;
+    case CommandType.sbc:
+      sbc.call(this, instruction);
+      break;
+    case CommandType.cmp:
+      cmp.call(this, instruction);
+      break;
+    case CommandType.cpx:
+      cpx.call(this, instruction);
+      break;
+    case CommandType.cpy:
+      cpy.call(this, instruction);
+      break;
+    case CommandType.asl:
+      asl.call(this, instruction);
+      break;
+    case CommandType.lsr:
+      lsr.call(this, instruction);
+      break;
+    case CommandType.rol:
+      rol.call(this, instruction);
+      break;
+    case CommandType.ror:
+      ror.call(this, instruction);
+      break;
+    case CommandType.jmp:
+      jmp.call(this, instruction);
+      break;
+    case CommandType.jsr:
+      jsr.call(this, instruction);
+      break;
+    case CommandType.rts:
+      rts.call(this);
+      break;
+    case CommandType.bcc:
+      bcc.call(this, instruction);
+      break;
+    case CommandType.bcs:
+      bcs.call(this, instruction);
+      break;
+    case CommandType.beq:
+      beq.call(this, instruction);
+      break;
+    case CommandType.bmi:
+      bmi.call(this, instruction);
+      break;
+    case CommandType.bne:
+      bne.call(this, instruction);
+      break;
+    case CommandType.bpl:
+      bpl.call(this, instruction);
+      break;
+    case CommandType.bvc:
+      bvc.call(this, instruction);
+      break;
+    case CommandType.bvs:
+      bvs.call(this, instruction);
+      break;
+    case CommandType.sec:
+      sec.call(this);
+      break;
+    case CommandType.sed:
+      sed.call(this);
+      break;
+    case CommandType.sei:
+      sei.call(this);
+      break;
+    case CommandType.clc:
+      clc.call(this);
+      break;
+    case CommandType.cld:
+      cld.call(this);
+      break;
+    case CommandType.cli:
+      cli.call(this);
+      break;
+    case CommandType.clv:
+      clv.call(this);
+      break;
+    case CommandType.nop:
+      break;
+    case CommandType.brk:
+      return "break";
+    default: {
+      throw new Error(
+        `Unknown instruction: ${CommandType[instruction.command.commandType]}`,
+      );
+    }
+  }
 }

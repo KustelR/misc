@@ -12,17 +12,22 @@ const byteRegex = /[0-9a-f]{1,2}/gm;
 const signRegex = /^[+-]/gm;
 
 const accumulatorAddressRegex = /^A$/;
-const zeroPageAddressRegex = /\$[0-9a-f]{2}$/gm;
-const absoluteAddressRegex = /\$[0-9a-f]{4}/gm;
-const zeroPageXAddressRegex = /\$[0-9a-f]{2},\s?[X]/gm;
-const zeroPageYAddressRegex = /\$[0-9a-f]{2},\s?[Y]/gm;
+const zeroPageAddressRegex = /\$[0-9a-f]{1,2}$/gm;
+const absoluteAddressRegex = /^\$[0-9a-f]{4}$/gm;
+const zeroPageXAddressRegex = /\$[0-9a-f]{1,2},\s?[xX]/gm;
+const zeroPageYAddressRegex = /\$[0-9a-f]{1,2},\s?[yY]/gm;
+const absoluteXAddressRegex = /\$[0-9a-f]{4},\s?[xX]/gm;
+const indirectAddressRegex = /\(\$[0-9a-f]{4}\)/gm;
+const absoluteYAddressRegex = /\$[0-9a-f]{4},\s?[yY]/gm;
+const indirectXAddressRegex = /\$\([0-9a-f]{4},\s?X\)/gm;
+const indirectYAddressRegex = /\$\([0-9a-f]{4}\),\s?Y/gm;
 
 export function compile(source: string): Array<Word> {
-  const precompiled = precompile(source);
-  return assemble(precompiled);
+  const preassembled = preassemble(source);
+  return assemble(preassembled);
 }
 
-function precompile(source: string): string {
+function preassemble(source: string): string {
   // TODO: Replace labels here
   return source;
 }
@@ -77,27 +82,19 @@ function getAddressMode(
     const addressingModes = getAddressingModes(commandType);
     return Number(Object.entries(addressingModes[0]));
   }
-  if (accumulatorAddressRegex.test(addressToken)) {
+  if (accumulatorAddressRegex.test(addressToken))
     return AddressingMode.accumulator;
-  }
-  if (addressToken.startsWith("#")) {
-    return AddressingMode.immediate;
-  }
-  if (zeroPageAddressRegex.test(addressToken)) {
-    return AddressingMode.zeroPage;
-  }
-  if (absoluteAddressRegex.test(addressToken)) {
-    return AddressingMode.absolute;
-  }
-  if (zeroPageXAddressRegex.test(addressToken)) {
-    return AddressingMode.zeroPageX;
-  }
-  if (zeroPageYAddressRegex.test(addressToken)) {
-    return AddressingMode.zeroPageY;
-  }
-  if (addressToken.startsWith("*")) {
-    return AddressingMode.relative;
-  }
+  if (addressToken.startsWith("#")) return AddressingMode.immediate;
+  if (zeroPageAddressRegex.test(addressToken)) return AddressingMode.zeroPage;
+  if (absoluteAddressRegex.test(addressToken)) return AddressingMode.absolute;
+  if (zeroPageXAddressRegex.test(addressToken)) return AddressingMode.zeroPageX;
+  if (zeroPageYAddressRegex.test(addressToken)) return AddressingMode.zeroPageY;
+  if (addressToken.startsWith("*")) return AddressingMode.relative;
+  if (indirectAddressRegex.test(addressToken)) return AddressingMode.indirect;
+  if (absoluteXAddressRegex.test(addressToken)) return AddressingMode.absoluteX;
+  if (absoluteYAddressRegex.test(addressToken)) return AddressingMode.absoluteY;
+  if (indirectXAddressRegex.test(addressToken)) return AddressingMode.indirectX;
+  if (indirectYAddressRegex.test(addressToken)) return AddressingMode.indirectY;
   throw new Error("Can't determine addressing mode");
 }
 

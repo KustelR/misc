@@ -23,7 +23,7 @@ export default function Editor(props: {
     }
   }, [code]);
   return (
-    <div className="flex-1 p-2 md:min-w-64 overflow-hidden">
+    <div className="flex-1 w-full p-2 md:min-w-64 overflow-hidden">
       <div className="h-full overflow-auto">
         <CodeMirror
           className="w-full whitespace-pre"

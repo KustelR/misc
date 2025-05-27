@@ -6,6 +6,7 @@ import { DoubleWord, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { useEffect, useState } from "react";
 import TextButton from "./ui/TextButton";
+import TextInput from "./ui/TextInput";
 
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
@@ -128,7 +129,7 @@ function Meta(props: {
   setIsDebug: (arg: boolean) => void;
   setSpeed?: (arg: number) => void;
 }) {
-  const { cpu, setIsDebug, isDebug } = props;
+  const { cpu, setIsDebug, isDebug, setSpeed } = props;
   const [cycles, setCycles] = useState(0);
   useEffect(() => {
     cpu.addCyclesListener(setCycles);
@@ -136,8 +137,12 @@ function Meta(props: {
   return (
     <div className="">
       <h2 className="bg-white/10 px-1">Meta</h2>
-      <div className="flex flex-col space-x-2 space-y-2 items-center justify-center flex-wrap h-fit">
+      <div className="flex flex-col w-full space-x-2 space-y-2  justify-center flex-wrap h-fit">
         <p className="">Cycles: {cycles}</p>
+        <TextInput
+          placeholder="Speed"
+          onChange={(e) => setSpeed?.(Number(e.target.value))}
+        />
         <div className="flex flex-row space-x-2 space-y-2 flex-wrap h-fit w-full">
           <TextButton onClick={() => cpu.unpause()}>start</TextButton>
           <TextButton onClick={() => cpu.pause()}>stop</TextButton>

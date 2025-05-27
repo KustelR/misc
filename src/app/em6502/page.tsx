@@ -51,7 +51,10 @@ function CodeView(props: { onSubmit: (bytes: Word[], error?: Error) => void }) {
 }
 
 function loadProgram(program: Word[], programStart: DoubleWord, cpu: CPU) {
-  cpu.pc = new DoubleWord(programStart.value - 1);
+  cpu.pc = new DoubleWord(programStart.value);
+  cpu.reg[ByteRegister.ps] = new Word(0x0);
+  cpu.unpause();
+
   program.forEach((byte, index) => {
     cpu.writeMemory(new DoubleWord(programStart.value + index), byte);
   });

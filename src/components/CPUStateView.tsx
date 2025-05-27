@@ -5,6 +5,7 @@ import { CPU, ByteRegister, CPURegisters } from "@/emulator/cpu";
 import { DoubleWord, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { useEffect, useState } from "react";
+import TextButton from "./ui/TextButton";
 
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
@@ -138,36 +139,16 @@ function Meta(props: {
       <div className="flex flex-col space-x-2 space-y-2 items-center justify-center flex-wrap h-fit">
         <p className="">Cycles: {cycles}</p>
         <div className="flex flex-row space-x-2 space-y-2 flex-wrap h-fit w-full">
-          <button
-            className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.unpause()}
-          >
-            start
-          </button>
-          <button
-            className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.pause()}
-          >
-            stop
-          </button>
-          <button
-            className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.step()}
-          >
-            step
-          </button>
-          <button
-            className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.reset()}
-          >
-            reset
-          </button>
-          <button
-            className="bg-red-600/15 px-1 cursor-pointer h-fit"
+          <TextButton onClick={() => cpu.unpause()}>start</TextButton>
+          <TextButton onClick={() => cpu.pause()}>stop</TextButton>
+          <TextButton onClick={() => cpu.step()}>step</TextButton>
+          <TextButton onClick={() => cpu.reset()}>reset</TextButton>
+          <TextButton
+            className={isDebug ? "bg-red-600/15" : "bg-green-600/15"}
             onClick={() => setIsDebug(!isDebug)}
           >
             debug
-          </button>
+          </TextButton>
         </div>
       </div>
     </div>

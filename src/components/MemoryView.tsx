@@ -5,6 +5,7 @@ import { DoubleWord, Memory, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
+import TextInput from "./ui/TextInput";
 
 export default function MemoryView(props: {
   cpu: CPU;
@@ -79,10 +80,8 @@ export default function MemoryView(props: {
         })}
       </div>
       <div className="flex flex-row">
-        <input
-          className="block w-1/2 bg-white/5"
+        <TextInput
           placeholder="Offset Y (hex)"
-          type="text"
           onChange={(event) => {
             if (
               event.target.value == "" ||

@@ -16,7 +16,7 @@ export default function () {
       <CodeView
         onSubmit={(bytes) => {
           loadProgram(bytes, new DoubleWord(PROGRAM_START), cpu);
-          cpu.start(1000000);
+          cpu.start(1);
         }}
       />
       <CPUStateView cpu={cpu} />

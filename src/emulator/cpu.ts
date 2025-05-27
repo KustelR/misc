@@ -297,17 +297,31 @@ and arg bytes: ${JSON.stringify(instruction.trailingBytes.map((byte) => byte.val
     return { instruction, offset: argsLength };
   }
 
+  /**
+   * Starts CPU going through program
+   * @param speed Amount of ticks per second
+   */
   async start(speed: number) {
     this.isForceStopped = false;
-    const interval = setInterval(async () => {
-      if (
-        this.reg[ByteRegister.ps].bit(StatusPosition.brkCommand) ||
-        this.isForceStopped
-      ) {
-        clearInterval(interval);
-      }
-      await this.step();
-    }, speed);
+    const interval = setInterval(
+      async () => {
+        if (
+          this.reg[ByteRegister.ps].bit(StatusPosition.brkCommand) ||
+          this.isForceStopped
+        ) {
+          clearInterval(interval);
+        }
+        if (speed > 1000) {
+          const iters = Math.floor(speed / 1000);
+          for (let x = 0; x < iters; x++) {
+            await this.step();
+          }
+        } else {
+          await this.step();
+        }
+      },
+      speed < 1000 ? 1000 / speed : 1,
+    );
   }
 
   async step() {

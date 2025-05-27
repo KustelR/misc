@@ -306,16 +306,6 @@ and arg bytes: ${JSON.stringify(instruction.trailingBytes.map((byte) => byte.val
   }
 }
 
-/**
- * Accepts word or dword as input and outputs word. Clamps most significant bits
- */
-function clampWord(value: Word | DoubleWord): Word {
-  if (value instanceof DoubleWord) {
-    return value.least();
-  }
-  return value;
-}
-
 export function getMemoryAddress(
   registers: CPURegisters,
   memory: Memory,

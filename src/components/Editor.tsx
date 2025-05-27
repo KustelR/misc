@@ -1,18 +1,25 @@
 "use client";
 
 import CodeMirror from "@uiw/react-codemirror";
-import { tokyoNight } from "@uiw/codemirror-theme-tokyo-night";
 import { androidstudio } from "@uiw/codemirror-theme-androidstudio";
 import { useEffect, useState } from "react";
 import { compile } from "@/emulator/compiler";
+import { Word } from "@/emulator/memory";
 
-export default function Editor() {
+export default function Editor(props: {
+  onChange: (bytes: Word[] | null, error?: Error) => void;
+}) {
+  const { onChange } = props;
   const [code, setCode] = useState("");
   useEffect(() => {
     try {
-      console.log(compile(code));
+      onChange(compile(code));
     } catch (error) {
-      console.warn("Compilation error:", error);
+      if (error instanceof Error) {
+        onChange(null, error);
+      } else {
+        onChange([], new Error("Unknown error"));
+      }
     }
   }, [code]);
   return (

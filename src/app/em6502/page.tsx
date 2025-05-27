@@ -15,9 +15,8 @@ export default function () {
     <main className="flex flex-col md:flex-row space-x-6 flex-1 space-y-4">
       <CodeView
         onSubmit={(bytes) => {
-          console.log(bytes);
           loadProgram(bytes, new DoubleWord(PROGRAM_START), cpu);
-          cpu.start(100);
+          cpu.start(1000000);
         }}
       />
       <CPUStateView cpu={cpu} />
@@ -28,7 +27,7 @@ export default function () {
 function CodeView(props: { onSubmit: (bytes: Word[], error?: Error) => void }) {
   const [bytes, setBytes] = useState<Word[]>([]);
   return (
-    <div className="h-screen w-full md:h-full md:flex-1 flex flex-col bg-neutral-800">
+    <div className="h-screen flex-grow md:h-full md:flex-4 flex flex-col bg-neutral-800">
       <header className="bg-white/10 w-full px-2">Code</header>
       <Editor
         onChange={(bytes, error) => {

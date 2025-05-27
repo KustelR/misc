@@ -251,7 +251,7 @@ export class CPU {
   }
 
   async execute(instruction: Instruction): Promise<void | "break"> {
-    execute.call(this, instruction);
+    return execute.call(this, instruction);
   }
   readInstruction(log?: boolean): { instruction: Instruction; offset: number } {
     const instructionByte = this.memory.readByte(this.programCounter);
@@ -293,7 +293,6 @@ and arg bytes: ${JSON.stringify(instruction.trailingBytes.map((byte) => byte.val
   async step() {
     this.cycles++;
     this.cyclesListeners.forEach((listener) => listener(this.cycles));
-    this.setStatus(StatusPosition.brkCommand, false);
 
     this.programCounter = this.programCounter.sum(1).value;
     const { instruction, offset } = this.readInstruction();

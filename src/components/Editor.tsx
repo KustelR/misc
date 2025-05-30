@@ -4,7 +4,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { androidstudio } from "@uiw/codemirror-theme-androidstudio";
 import { useEffect, useState } from "react";
 import { compile } from "@/emulator/compiler";
-import { Word } from "@/emulator/memory";
+import { DoubleWord, Word } from "@/emulator/memory";
 
 export default function Editor(props: {
   onChange: (bytes: Word[] | null, error?: Error) => void;
@@ -13,7 +13,7 @@ export default function Editor(props: {
   const [code, setCode] = useState("");
   useEffect(() => {
     try {
-      onChange(compile(code));
+      onChange(compile(code, new DoubleWord(0x600)));
     } catch (error) {
       if (error instanceof Error) {
         onChange(null, error);

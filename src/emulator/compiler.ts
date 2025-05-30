@@ -1,15 +1,20 @@
+import { formatByte } from "@/utils/formatByte";
 import {
   AddressingMode,
   cmdToByte,
   CommandType,
   getAddressingModes,
 } from "./instructions";
-import { Word } from "./memory";
+import { DoubleWord, Word } from "./memory";
 
-const tokenRegex = /([;:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)/gm;
-const labelDeclarationRegex = /^([a-zA-Z_][a-zA-Z0-9_]*):$/;
+const tokenRegex = /([{};:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)/gm;
 const byteRegex = /[0-9a-f]{1,2}/gm;
 const signRegex = /^[+-]/gm;
+
+const labelReferenceRegex = /^[a-zA-Z]{3}\s#?([a-zA-Z_][a-zA-Z_0-9]+)$/gm;
+const labelDeclarationRegex = /^([a-zA-Z_][a-zA-Z0-9_]*):$/gm;
+const definitionRegex =
+  /^define\s+([a-zA-Z_][a-zA-Z0-9_]*)\s[\$][a-zA-Z0-9]+$/gm;
 
 const accumulatorAddressRegex = /^A$/;
 const zeroPageAddressRegex = /\$[0-9a-f]{1,2}$/gm;
@@ -22,42 +27,128 @@ const absoluteYAddressRegex = /\$[0-9a-f]{4},\s?[yY]/gm;
 const indirectXAddressRegex = /\$\([0-9a-f]{4},\s?X\)/gm;
 const indirectYAddressRegex = /\$\([0-9a-f]{4}\),\s?Y/gm;
 
-export function compile(source: string): Array<Word> {
-  const preassembled = preassemble(source);
-  return assemble(preassembled);
+const markedForReplaceRegex = /\{.*\}/gm;
+
+export function compile(source: string, programStart: DoubleWord): Array<Word> {
+  const { code, labels } = preassemble(source);
+  return assemble(code, labels, programStart);
 }
 
-function preassemble(source: string): string {
-  // TODO: Replace labels here
-  return source;
+function preassemble(source: string): {
+  code: string;
+  labels: { [key: string]: number };
+} {
+  const result: string[] = [];
+  const lines = source.split("\n");
+  const labels: { [key: string]: number } = {};
+  const constants: { [key: string]: string } = {};
+  lines.forEach((line, index) => {
+    let resString = "";
+    const trimmed = line.trim();
+    const isLabel = labelDeclarationRegex.test(trimmed);
+    const isDefinition = definitionRegex.test(trimmed);
+    const hasReference = labelReferenceRegex.test(trimmed);
+
+    if (isLabel) {
+      const match = trimmed.match(labelDeclarationRegex)![0];
+      labels[match.slice(0, -1)] =
+        index - Object.keys(labels).length - Object.keys(constants).length;
+      return;
+    }
+    if (isDefinition) {
+      const tokens = trimmed.match(tokenRegex);
+      if (tokens && tokens.length > 1) {
+        constants[tokens[1]] = tokens[2];
+      }
+      return;
+    }
+    if (hasReference) {
+      const tokens = trimmed.match(tokenRegex)!;
+      const label = tokens[1].match(/[a-zA-Z_][a-zA-Z_0-9]*/)![0];
+      if (label in labels) {
+        resString = trimmed.replace(label, `{${label}}`);
+      }
+      if (label in constants) {
+        resString = trimmed.replace(label, constants[label]);
+      }
+      console.log(trimmed, label, resString, labels, constants);
+      result.push(resString);
+      return;
+    }
+    result.push(trimmed);
+  });
+  return { code: result.join("\n"), labels };
 }
 
-function assemble(source: string): Array<Word> {
+function assemble(
+  source: string,
+  labels: { [key: string]: number },
+  programStart: DoubleWord,
+  log?: boolean,
+): Array<Word> {
+  if (log) {
+    console.log(`Trying to assemble source:\n ${source}`);
+  }
+  const labeledLines: { [key: number]: string } = {};
+  Object.entries(labels).forEach(([label, number]) => {
+    labeledLines[number] = label;
+  });
+  const labelAddresses: { [key: string]: DoubleWord } = {};
   const result: Word[] = [];
   const lines = source.split("\n");
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith(";")) return;
-
-    const compiled = assembleLine(trimmed);
+  lines.forEach((line, index) => {
+    if (index in labeledLines) {
+      labelAddresses[labeledLines[index]] = new DoubleWord(
+        result.length + programStart.value,
+      );
+    }
+    if (line.startsWith(";")) return;
+    const compiled = assembleLine(
+      line,
+      new DoubleWord(programStart.value + result.length),
+      labelAddresses,
+    );
     result.push(...compiled);
   });
   return result;
 }
 
-function assembleLine(line: string) {
+function assembleLine(
+  line: string,
+  offset: DoubleWord,
+  labelAddresses: { [key: string]: DoubleWord },
+): Word[] {
   const result: Word[] = [];
   const tokens = line.match(tokenRegex);
   if (tokens) {
     let instruction: CommandType | undefined;
     let addressingMode: AddressingMode | undefined;
-    if (labelDeclarationRegex.test(tokens[0])) {
-      throw new Error("Encountered label in assemble step");
-    }
+
     instruction = CommandType[tokens[0] as keyof typeof CommandType];
 
     if (!instruction) throw new Error(`Unknown instruction: ${tokens[0]}`);
-    addressingMode = getAddressMode(instruction, tokens.length, tokens[1]);
+
+    if (tokens[1] && markedForReplaceRegex.test(tokens[1])) {
+      const target = tokens[1].slice(1, -1);
+      if (target in labelAddresses) {
+        tokens[1] =
+          "$" +
+          formatByte(labelAddresses[target].most(), true) +
+          formatByte(labelAddresses[target].least(), true);
+      }
+    }
+
+    try {
+      addressingMode = getAddressMode(instruction, tokens.length, tokens[1]);
+    } catch (e) {
+      throw new Error(
+        `Can't determine addressing mode at byte 0x${(offset.value + 1).toString(16)},
+instruction: ${CommandType[instruction]}
+argument: ${tokens[1]}
+line: ${line}
+error: ${e}`,
+      );
+    }
 
     const command = cmdToByte({
       commandType: instruction,

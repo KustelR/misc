@@ -7,6 +7,11 @@ import {
 } from "./instructions";
 import { DoubleWord, Word } from "./memory";
 
+interface Line {
+  line: string;
+  index: number;
+}
+
 const tokenRegex = /([{};:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)/gm;
 const byteRegex = /[0-9a-f]{1,2}/gm;
 const signRegex = /^[+-]/gm;
@@ -34,19 +39,21 @@ export function compile(
   programStart: DoubleWord,
   log?: boolean,
 ): Array<Word> {
-  const { code, labels } = preassemble(source);
+  const { lines, labels } = preassemble(source);
   if (log) {
     console.log(`Trying to assemble source:\n ${source}`);
-    console.log(`Indexed source:\n ${code}`);
+    console.log(
+      `Indexed source:\n ${lines.map((line) => line.line).join("\n")}`,
+    );
   }
-  return assemble(code, labels, programStart);
+  return assemble(lines, labels, programStart);
 }
 
 function preassemble(source: string): {
-  code: string;
+  lines: Line[];
   labels: { [key: string]: number };
 } {
-  const result: string[] = [];
+  const result: Line[] = [];
   const lines = source.split("\n");
   const labels: { [key: string]: number } = {};
   const constants: { [key: string]: string } = {};
@@ -80,16 +87,16 @@ function preassemble(source: string): {
         resString = trimmed.replace(label, constants[label]);
       }
       console.log(trimmed, label, resString, labels, constants);
-      result.push(resString);
+      result.push({ line: resString, index: index + 1 });
       return;
     }
-    result.push(trimmed);
+    result.push({ line: trimmed, index: index + 1 });
   });
-  return { code: result.join("\n"), labels };
+  return { lines: result, labels };
 }
 
 function assemble(
-  source: string,
+  lines: Line[],
   labels: { [key: string]: number },
   programStart: DoubleWord,
 ): Array<Word> {
@@ -99,14 +106,13 @@ function assemble(
   });
   const labelAddresses: { [key: string]: DoubleWord } = {};
   const result: Word[] = [];
-  const lines = source.split("\n");
-  lines.forEach((line, index) => {
-    if (index in labeledLines) {
-      labelAddresses[labeledLines[index]] = new DoubleWord(
+  lines.forEach((line, trueIndex) => {
+    if (trueIndex in labeledLines) {
+      labelAddresses[labeledLines[trueIndex]] = new DoubleWord(
         result.length + programStart.value,
       );
     }
-    if (line.startsWith(";")) return;
+    if (line.line.startsWith(";")) return;
     const compiled = assembleLine(
       line,
       new DoubleWord(programStart.value + result.length),
@@ -118,19 +124,22 @@ function assemble(
 }
 
 function assembleLine(
-  line: string,
+  line: Line,
   offset: DoubleWord,
   labelAddresses: { [key: string]: DoubleWord },
 ): Word[] {
   const result: Word[] = [];
-  const tokens = line.match(tokenRegex);
+  const tokens = line.line.match(tokenRegex);
   if (tokens) {
     let instruction: CommandType | undefined;
     let addressingMode: AddressingMode | undefined;
 
     instruction = CommandType[tokens[0] as keyof typeof CommandType];
 
-    if (!instruction) throw new Error(`Unknown instruction: ${tokens[0]}`);
+    if (!instruction)
+      throw new Error(
+        `Unknown instruction at line ${line.index}: ${tokens[0]}`,
+      );
 
     if (tokens[1] && markedForReplaceRegex.test(tokens[1])) {
       const target = tokens[1].slice(1, -1);
@@ -146,11 +155,7 @@ function assembleLine(
       addressingMode = getAddressMode(instruction, tokens.length, tokens[1]);
     } catch (e) {
       throw new Error(
-        `Can't determine addressing mode at byte 0x${(offset.value + 1).toString(16)},
-instruction: ${CommandType[instruction]}
-argument: ${tokens[1]}
-line: ${line}
-error: ${e}`,
+        `Can't determine addressing mode at  line ${line.index} (byte 0x${(offset.value + 1).toString(16)})\n${e}`,
       );
     }
 

@@ -26,10 +26,12 @@ export default function () {
 
 function CodeView(props: { onSubmit: (bytes: Word[], error?: Error) => void }) {
   const [bytes, setBytes] = useState<Word[]>([]);
+  const [isExportable, setIsExportable] = useState<boolean>(false);
   return (
     <div className="h-screen flex-grow md:h-full md:flex-4 flex flex-col bg-neutral-800">
       <header className="bg-white/10 w-full px-2">Code</header>
       <Editor
+        setIsExportable={setIsExportable}
         onChange={(bytes, error) => {
           if (bytes) {
             setBytes(bytes);
@@ -40,8 +42,11 @@ function CodeView(props: { onSubmit: (bytes: Word[], error?: Error) => void }) {
         }}
       />
       <button
-        className="w-full bg-white/10 my-1 cursor-pointer"
-        onClick={() => props.onSubmit(bytes)}
+        className="w-full bg-white/10 my-1 enabled:cursor-pointer disabled:bg-red-600"
+        disabled={!isExportable}
+        onClick={() => {
+          if (isExportable) props.onSubmit(bytes);
+        }}
       >
         Assemble
       </button>

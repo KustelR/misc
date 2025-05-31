@@ -8,13 +8,14 @@ import { DoubleWord, Word } from "@/emulator/memory";
 
 export default function Editor(props: {
   onChange: (bytes: Word[] | null, error?: Error) => void;
+  setIsExportable: (isExportable: boolean) => void;
 }) {
-  const { onChange } = props;
+  const { onChange, setIsExportable } = props;
   const [code, setCode] = useState("");
   const [compileOutput, setCompileOutput] = useState<Error | null>(null);
   useEffect(() => {
     try {
-      onChange(compile(code, new DoubleWord(0x600), true));
+      onChange(compile(code, new DoubleWord(0x600)));
       setCompileOutput(null);
     } catch (error) {
       if (error instanceof Error) {
@@ -28,6 +29,9 @@ export default function Editor(props: {
       }
     }
   }, [code]);
+  useEffect(() => {
+    setIsExportable(compileOutput === null);
+  }, [compileOutput]);
   return (
     <div className="flex-1 w-full p-2 md:min-w-64 overflow-hidden">
       <div className=" overflow-auto">

@@ -16,7 +16,11 @@ const tokenRegex = /([{};:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)/gm;
 const byteRegex = /[0-9a-f]{1,2}/gm;
 const signRegex = /^[+-]/;
 
-const labelReferenceRegex = /^[a-zA-Z]{3}\s#?([a-zA-Z_][a-zA-Z_0-9]+)$/;
+const labelReferenceRegex =
+  /^[a-zA-Z]{3}\s#?([a-zA-Z_][a-zA-Z_0-9]+)(?:,\s?[XY])?$/;
+const ambiguosReferenceRegex =
+  /^[a-zA-Z]{3}\s#?\$?([a-fA-F0-9]+)(?:,\s?[XY])?$/;
+
 const labelDeclarationRegex = /^([a-zA-Z_][a-zA-Z0-9_]*):$/;
 const definitionRegex = /^define\s+([a-zA-Z_][a-zA-Z0-9_]*)\s[\$][a-zA-Z0-9]+$/;
 
@@ -80,7 +84,10 @@ function preassemble(source: string): {
         modifiedLine = trimmed.replace(label, constants[label]);
       }
       if (!modifiedLine) {
-        throw new Error(`Undefined label or constant: ${label}`);
+        if (!ambiguosReferenceRegex.test(trimmed)) {
+          throw new Error(`Undefined label or constant: ${label}`);
+        }
+        result.push(trimmed);
       }
       result.push(modifiedLine);
       return;

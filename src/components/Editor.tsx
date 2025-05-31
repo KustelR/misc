@@ -11,20 +11,26 @@ export default function Editor(props: {
 }) {
   const { onChange } = props;
   const [code, setCode] = useState("");
+  const [compileOutput, setCompileOutput] = useState<Error | null>(null);
   useEffect(() => {
     try {
-      onChange(compile(code, new DoubleWord(0x600)));
+      onChange(compile(code, new DoubleWord(0x600), true));
+      setCompileOutput(null);
     } catch (error) {
       if (error instanceof Error) {
-        onChange(null, error);
+        setCompileOutput(error);
       } else {
-        onChange([], new Error("Unknown error"));
+        setCompileOutput(
+          new Error(
+            `Compiler instance thrown unknown instance instead of error: ${error}`,
+          ),
+        );
       }
     }
   }, [code]);
   return (
     <div className="flex-1 w-full p-2 md:min-w-64 overflow-hidden">
-      <div className="h-full overflow-auto">
+      <div className=" overflow-auto">
         <CodeMirror
           className="w-full whitespace-pre"
           theme={androidstudio}
@@ -32,6 +38,7 @@ export default function Editor(props: {
           onChange={setCode}
         />
       </div>
+      <p className="bg-red-500/10 whitespace-pre">{compileOutput?.message}</p>
     </div>
   );
 }

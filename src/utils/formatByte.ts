@@ -1,10 +1,13 @@
+import { Word } from "@/emulator/memory";
+
 export function formatByte(
-  data: number,
+  data: number | Word,
   noPrefix?: boolean,
   noLeadingZero?: boolean,
 ): string {
-  if (data > 255) {
+  const value = data instanceof Word ? data.value : data;
+  if (value > 255) {
     return "OVERFLOW";
   }
-  return `${noPrefix ? "" : "0x"}${data > 15 || noLeadingZero ? data.toString(16) : "0" + data.toString(16)}`;
+  return `${noPrefix ? "" : "0x"}${value > 15 || noLeadingZero ? value.toString(16) : "0" + value.toString(16)}`;
 }

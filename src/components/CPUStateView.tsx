@@ -5,10 +5,13 @@ import { CPU, ByteRegister, CPURegisters } from "@/emulator/cpu";
 import { DoubleWord, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { useEffect, useState } from "react";
+import TextButton from "./ui/TextButton";
+import TextInput from "./ui/TextInput";
 
 export default function CPUStateView(props: { cpu: CPU }) {
   const { cpu } = props;
   const [registers, setRegisters] = useState<CPURegisters>(cpu.reg);
+  const [isDebug, setIsDebug] = useState(true);
   const [programCounter, setProgramCounter] = useState<DoubleWord>(cpu.pc);
   useEffect(() => {
     cpu.addRegisterListener((c) => {
@@ -18,20 +21,24 @@ export default function CPUStateView(props: { cpu: CPU }) {
   }, [cpu]);
 
   return (
-    <div className="h-full flex flex-col bg-neutral-800 space-y-2 overflow-y-auto">
+    <div className="h-full flex-1/4 flex flex-col bg-neutral-800 space-y-2 overflow-y-auto">
       <header className="bg-white/10 w-full px-2">CPU State</header>
       <div className="flex flex-row flex-wrap p-2 space-x-2 space-y-2">
-        <ByteView header="IDA" value={registers[ByteRegister.ida].value} />
-        <ByteView header="IDX" value={registers[ByteRegister.idx].value} />
-        <ByteView header="IDY" value={registers[ByteRegister.idy].value} />
-        <ProgramCounter value={programCounter.value} />
-        <ByteView
-          header="Stack Pointer"
-          value={registers[ByteRegister.sp].value}
-        />
-        <Flags {...cpu.getProcessorStatus()} />
-        <MemoryView cpu={cpu} height={16} />
-        <Meta cpu={cpu} />
+        {isDebug && (
+          <>
+            <ByteView header="IDA" value={registers[ByteRegister.ida].value} />
+            <ByteView header="IDX" value={registers[ByteRegister.idx].value} />
+            <ByteView header="IDY" value={registers[ByteRegister.idy].value} />
+            <ProgramCounter value={programCounter.value} />
+            <ByteView
+              header="Stack Pointer"
+              value={registers[ByteRegister.sp].value}
+            />
+            <Flags {...cpu.getProcessorStatus()} />
+            <MemoryView cpu={cpu} height={16} />
+          </>
+        )}
+        <Meta cpu={cpu} setIsDebug={setIsDebug} isDebug={isDebug} />
       </div>
     </div>
   );
@@ -116,8 +123,13 @@ function FlagView(props: { header: string; value: boolean }) {
   );
 }
 
-function Meta(props: { cpu: CPU }) {
-  const { cpu } = props;
+function Meta(props: {
+  cpu: CPU;
+  isDebug: boolean;
+  setIsDebug: (arg: boolean) => void;
+  setSpeed?: (arg: number) => void;
+}) {
+  const { cpu, setIsDebug, isDebug, setSpeed } = props;
   const [cycles, setCycles] = useState(0);
   useEffect(() => {
     cpu.addCyclesListener(setCycles);
@@ -125,21 +137,23 @@ function Meta(props: { cpu: CPU }) {
   return (
     <div className="">
       <h2 className="bg-white/10 px-1">Meta</h2>
-      <div className="flex flex-col space-x-2 space-y-2 items-center justify-center flex-wrap h-fit">
+      <div className="flex flex-col w-full space-x-2 space-y-2  justify-center flex-wrap h-fit">
         <p className="">Cycles: {cycles}</p>
+        <TextInput
+          placeholder="Speed"
+          onChange={(e) => setSpeed?.(Number(e.target.value))}
+        />
         <div className="flex flex-row space-x-2 space-y-2 flex-wrap h-fit w-full">
-          <button
-            className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.stop()}
+          <TextButton onClick={() => cpu.unpause()}>start</TextButton>
+          <TextButton onClick={() => cpu.pause()}>stop</TextButton>
+          <TextButton onClick={() => cpu.step()}>step</TextButton>
+          <TextButton onClick={() => cpu.reset()}>reset</TextButton>
+          <TextButton
+            className={isDebug ? "bg-red-600/15" : "bg-green-600/15"}
+            onClick={() => setIsDebug(!isDebug)}
           >
-            stop
-          </button>
-          <button
-            className="bg-white/5 px-1 cursor-pointer h-fit"
-            onClick={() => cpu.step()}
-          >
-            step
-          </button>
+            debug
+          </TextButton>
         </div>
       </div>
     </div>

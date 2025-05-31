@@ -29,8 +29,16 @@ const indirectYAddressRegex = /\$\([0-9a-f]{4}\),\s?Y/gm;
 
 const markedForReplaceRegex = /\{.*\}/gm;
 
-export function compile(source: string, programStart: DoubleWord): Array<Word> {
+export function compile(
+  source: string,
+  programStart: DoubleWord,
+  log?: boolean,
+): Array<Word> {
   const { code, labels } = preassemble(source);
+  if (log) {
+    console.log(`Trying to assemble source:\n ${source}`);
+    console.log(`Indexed source:\n ${code}`);
+  }
   return assemble(code, labels, programStart);
 }
 
@@ -84,11 +92,7 @@ function assemble(
   source: string,
   labels: { [key: string]: number },
   programStart: DoubleWord,
-  log?: boolean,
 ): Array<Word> {
-  if (log) {
-    console.log(`Trying to assemble source:\n ${source}`);
-  }
   const labeledLines: { [key: number]: string } = {};
   Object.entries(labels).forEach(([label, number]) => {
     labeledLines[number] = label;
@@ -186,7 +190,14 @@ function getAddressMode(
   if (absoluteYAddressRegex.test(addressToken)) return AddressingMode.absoluteY;
   if (indirectXAddressRegex.test(addressToken)) return AddressingMode.indirectX;
   if (indirectYAddressRegex.test(addressToken)) return AddressingMode.indirectY;
-  throw new Error("Can't determine addressing mode");
+  throw new AddressingError(`Unknown addressing mode: ${addressToken}`);
+}
+
+class AddressingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AddressingError";
+  }
 }
 
 function getArgumentBytes(token: string): Word[] {

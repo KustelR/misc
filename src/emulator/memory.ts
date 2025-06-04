@@ -1,9 +1,13 @@
 class Word {
   constructor(data: number) {
-    if (data < 0 || data > 255) {
+    if (data < -127 || data > 255) {
       throw new Error(`Invalid word: ${data}`, { cause: data });
     }
+    if (data >= 0) {
     this.value = data;
+    } else {
+      this.value = (data & 0x7f) | 0x80;
+    }
   }
   toDoubleWord() {
     return new DoubleWord(this.value);

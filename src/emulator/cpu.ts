@@ -139,6 +139,11 @@ export class CPU {
     this.registerListeners = [];
   }
 
+  private startedAt: number = 0;
+  get started() {
+    return new Date(this.startedAt);
+  }
+
   private cycles: number = 0;
   private cyclesListeners: ((cycles: number) => void)[] = [];
   addCyclesListener(listener: (cycles: number) => void) {
@@ -208,6 +213,7 @@ export class CPU {
       [ByteRegister.ps]: new Word(0x0),
     };
     this.programCounter = new DoubleWord(0x0);
+    this.cycles = 0;
     this.stack = new Stack();
 
     this.memoryListeners.forEach((listener) => listener(this.memory));
@@ -303,6 +309,7 @@ and arg bytes: ${JSON.stringify(instruction.trailingBytes.map((byte) => byte.val
    */
   async start(speed: number) {
     this.isForceStopped = false;
+    this.startedAt = Date.now();
     const interval = setInterval(
       async () => {
         if (

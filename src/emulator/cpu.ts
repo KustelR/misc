@@ -411,7 +411,7 @@ export function arithmeticResultFlags(value: number | Word) {
   const result = value instanceof Word ? value.value : value;
   return {
     negative: (result & 0x80) !== 0,
-    zero: result === 0,
+    zero: result % 256 === 0 || result === 0,
     carry: result > 0xff,
   };
 }

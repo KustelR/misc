@@ -4,9 +4,9 @@ class Word {
       throw new Error(`Invalid word: ${data}`, { cause: data });
     }
     if (data >= 0) {
-    this.value = data;
+      this.value = data;
     } else {
-      this.value = (data & 0x7f) | 0x80;
+      this.value = Math.abs(data) | 0x80;
     }
   }
   toDoubleWord() {
@@ -31,15 +31,15 @@ class Word {
     const res = this.value + val.value;
     return { value: new Word(res % 256), raw: res, isOverflown: res > 255 };
   }
+  /*
+  So this treats words as signed integers instead of unsigned as any other method. Yes, this is how 6502 works.
+   */
   sub(val: Word): { value: Word; raw: number; isOverflown: boolean } {
-    const raw =
-      (this.value & 0x80) * (this.isNegative() ? -1 : 1) -
-      (val.value & 0x80) * (val.isNegative() ? -1 : 1);
     const res = this.value - val.value;
     return {
-      value: new Word(res),
-      raw: raw,
-      isOverflown: raw !== res,
+      value: new Word(res % 256),
+      raw: res,
+      isOverflown: res < 0 !== this.isNegative(),
     };
   }
   and(val: Word): Word {

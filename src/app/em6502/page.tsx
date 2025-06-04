@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 const PROGRAM_START = 0x600;
 
 export default function () {
+  const [speed, setSpeed] = useState(10);
   const [cpu, setCpu] = useState(new CPU());
   useEffect(() => {}, [cpu]);
   return (
@@ -16,10 +17,10 @@ export default function () {
       <CodeView
         onSubmit={(bytes) => {
           loadProgram(bytes, new DoubleWord(PROGRAM_START), cpu);
-          cpu.start(10);
+          cpu.start(speed);
         }}
       />
-      <CPUStateView cpu={cpu} />
+      <CPUStateView cpu={cpu} onSpeedChange={(s) => setSpeed(s)} />
     </main>
   );
 }

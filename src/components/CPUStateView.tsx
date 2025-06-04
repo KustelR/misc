@@ -8,8 +8,11 @@ import { useEffect, useState } from "react";
 import TextButton from "./ui/TextButton";
 import TextInput from "./ui/TextInput";
 
-export default function CPUStateView(props: { cpu: CPU }) {
-  const { cpu } = props;
+export default function CPUStateView(props: {
+  cpu: CPU;
+  onSpeedChange?: (speed: number) => void;
+}) {
+  const { cpu, onSpeedChange } = props;
   const [registers, setRegisters] = useState<CPURegisters>(cpu.reg);
   const [isDebug, setIsDebug] = useState(true);
   const [programCounter, setProgramCounter] = useState<DoubleWord>(cpu.pc);
@@ -38,7 +41,12 @@ export default function CPUStateView(props: { cpu: CPU }) {
             <MemoryView cpu={cpu} height={16} />
           </>
         )}
-        <Meta cpu={cpu} setIsDebug={setIsDebug} isDebug={isDebug} />
+        <Meta
+          cpu={cpu}
+          setIsDebug={setIsDebug}
+          isDebug={isDebug}
+          onSpeedChange={onSpeedChange || (() => {})}
+        />
       </div>
     </div>
   );
@@ -127,21 +135,28 @@ function Meta(props: {
   cpu: CPU;
   isDebug: boolean;
   setIsDebug: (arg: boolean) => void;
-  setSpeed?: (arg: number) => void;
+  onSpeedChange: (arg: number) => void;
 }) {
-  const { cpu, setIsDebug, isDebug, setSpeed } = props;
+  const { cpu, setIsDebug, isDebug, onSpeedChange: setSpeed } = props;
   const [cycles, setCycles] = useState(0);
   useEffect(() => {
-    cpu.addCyclesListener(setCycles);
+    cpu.addCyclesListener((c) => {
+      setCycles(c);
+    });
   }, [cpu]);
   return (
     <div className="">
       <h2 className="bg-white/10 px-1">Meta</h2>
       <div className="flex flex-col w-full space-x-2 space-y-2  justify-center flex-wrap h-fit">
-        <p className="">Cycles: {cycles}</p>
+        <p className="">
+          Cycles: {cycles} (
+          {((cycles * 1000) / (Date.now() - cpu.started.getTime())).toFixed(2)}{" "}
+          c/s)
+        </p>
         <TextInput
-          placeholder="Speed"
-          onChange={(e) => setSpeed?.(Number(e.target.value))}
+          title="affected by hardware and browser"
+          placeholder="Speed t/s"
+          onChange={(e) => setSpeed(Number(e.target.value))}
         />
         <div className="flex flex-row space-x-2 space-y-2 flex-wrap h-fit w-full">
           <TextButton onClick={() => cpu.unpause()}>start</TextButton>

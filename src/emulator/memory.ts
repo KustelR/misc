@@ -1,7 +1,7 @@
 class Word {
   constructor(data: number) {
     if (data < 0 || data > 255) {
-      throw new Error("Invalid word");
+      throw new Error(`Invalid word: ${data}`, { cause: data });
     }
     this.value = data;
   }

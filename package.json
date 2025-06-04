@@ -7,7 +7,8 @@
     "prettier-watch": "npx onchange \"**/*\" -- prettier --write --ignore-unknown {{changed}}",
     "build": "next build",
     "start": "next start -p 8080",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest"
   },
   "dependencies": {
     "@uiw/codemirror-theme-androidstudio": "^4.23.12",
@@ -23,9 +24,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "jest": "^29.7.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.1"
   }
 }

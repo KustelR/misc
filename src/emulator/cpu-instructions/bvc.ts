@@ -6,7 +6,7 @@ export default function bvc(this: CPU, instruction: Instruction) {
     instruction.command.addressingMode,
     instruction.trailingBytes,
   );
-  if (this.reg[ByteRegister.ps].bit(StatusPosition.overflow) === 0) return;
+  if (this.reg[ByteRegister.ps].bit(StatusPosition.overflow) === 1) return;
   const newAddress = this.pc.sum(value).value;
   this.pc = newAddress;
 }

@@ -19,6 +19,8 @@ import { afterEach, mock } from "node:test";
 import bmi from "./bmi";
 import bne from "./bne";
 import bpl from "./bpl";
+import bvc from "./bvc";
+import bvs from "./bvs";
 
 const MockCPU = vi.fn(function (this: CPU): CPU {
   this.getValue = (addressingMode: AddressingMode, data: Word[]) => {
@@ -325,6 +327,31 @@ describe("testing BPL instruction", () => {
     bpl.call(
       mockCPU,
       instruction(CommandType.bpl, AddressingMode.relative, [new Word(0x10)]),
+    );
+    expect(mockCPU.pc.value).toBe(0x10);
+  });
+});
+describe.skip("testing BRK instruction", () => {
+  // Well interpreting this instruction is up to OS... At least it is what the docs says... ANYWAYS it handled in CPU class now, therefore i don't see the point in testing it here.
+});
+describe("testing BVC instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should branch if overflow flag is clear", () => {
+    mockCPU.setStatus(StatusPosition.overflow, false);
+    bvc.call(
+      mockCPU,
+      instruction(CommandType.bvc, AddressingMode.relative, [new Word(0x10)]),
+    );
+    expect(mockCPU.pc.value).toBe(0x10);
+  });
+});
+describe("testing BVS instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should branch if overflow flag is set", () => {
+    mockCPU.setStatus(StatusPosition.overflow, true);
+    bvs.call(
+      mockCPU,
+      instruction(CommandType.bvs, AddressingMode.relative, [new Word(0x10)]),
     );
     expect(mockCPU.pc.value).toBe(0x10);
   });

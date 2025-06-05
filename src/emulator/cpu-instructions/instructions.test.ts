@@ -17,6 +17,7 @@ import beq from "./beq";
 import bit from "./bit";
 import { afterEach, mock } from "node:test";
 import bmi from "./bmi";
+import bne from "./bne";
 
 const MockCPU = vi.fn(function (this: CPU): CPU {
   this.getValue = (addressingMode: AddressingMode, data: Word[]) => {
@@ -301,6 +302,17 @@ describe("testing BMI instruction", () => {
     bmi.call(
       mockCPU,
       instruction(CommandType.bmi, AddressingMode.relative, [new Word(0x10)]),
+    );
+    expect(mockCPU.pc.value).toBe(0x10);
+  });
+});
+describe("testing BNE instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should branch if zero flag is clear", () => {
+    mockCPU.setStatus(StatusPosition.zero, false);
+    bne.call(
+      mockCPU,
+      instruction(CommandType.bne, AddressingMode.relative, [new Word(0x10)]),
     );
     expect(mockCPU.pc.value).toBe(0x10);
   });

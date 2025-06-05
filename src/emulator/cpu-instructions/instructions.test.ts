@@ -18,6 +18,7 @@ import bit from "./bit";
 import { afterEach, mock } from "node:test";
 import bmi from "./bmi";
 import bne from "./bne";
+import bpl from "./bpl";
 
 const MockCPU = vi.fn(function (this: CPU): CPU {
   this.getValue = (addressingMode: AddressingMode, data: Word[]) => {
@@ -313,6 +314,17 @@ describe("testing BNE instruction", () => {
     bne.call(
       mockCPU,
       instruction(CommandType.bne, AddressingMode.relative, [new Word(0x10)]),
+    );
+    expect(mockCPU.pc.value).toBe(0x10);
+  });
+});
+describe("testing BPL instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should branch if negative flag is clear", () => {
+    mockCPU.setStatus(StatusPosition.negative, false);
+    bpl.call(
+      mockCPU,
+      instruction(CommandType.bpl, AddressingMode.relative, [new Word(0x10)]),
     );
     expect(mockCPU.pc.value).toBe(0x10);
   });

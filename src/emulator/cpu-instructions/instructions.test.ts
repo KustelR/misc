@@ -9,6 +9,7 @@ import {
   StatusPosition,
   statusToReg,
 } from "../cpu";
+import and from "./and";
 
 const MockCPU = vi.fn(function (this: CPU): CPU {
   this.getValue = (addressingMode: AddressingMode, data: Word[]) => {
@@ -112,5 +113,39 @@ describe("testing ADC instruction", () => {
     expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.overflow)).toBe(0);
     expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(0);
     expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+});
+describe("testing AND instruction", () => {
+  it("should and words correctly", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x1);
+    and.call(
+      mockCPU,
+      instruction(CommandType.and, AddressingMode.immediate, [new Word(0x1)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x1);
+  });
+  it("should set zero flag if accumulator = 0", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x0);
+    and.call(
+      mockCPU,
+      instruction(CommandType.and, AddressingMode.immediate, [new Word(0x1)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.overflow)).toBe(0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 set", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0xff);
+    and.call(
+      mockCPU,
+      instruction(CommandType.and, AddressingMode.immediate, [new Word(0x80)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x80);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.overflow)).toBe(0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(0);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import adc from "./adc";
 import { AddressingMode, CommandType, Instruction } from "../instructions";
 import { DoubleWord, Word } from "../memory";
@@ -15,7 +15,6 @@ import bcs from "./bcs";
 import bcc from "./bcc";
 import beq from "./beq";
 import bit from "./bit";
-import { afterEach, mock } from "node:test";
 import bmi from "./bmi";
 import bne from "./bne";
 import bpl from "./bpl";

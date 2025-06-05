@@ -7,7 +7,7 @@ export default function asl(this: CPU, instruction: Instruction) {
     instruction.command.addressingMode,
     instruction.trailingBytes,
   );
-  const res = new Word(value.value << 1);
+  const res = new Word((value.value << 1) % 256);
   if (instruction.command.addressingMode === AddressingMode.accumulator) {
     this.reg[ByteRegister.ida] = res;
   } else {

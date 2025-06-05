@@ -6,7 +6,7 @@ export default function bmi(this: CPU, instruction: Instruction) {
     instruction.command.addressingMode,
     instruction.trailingBytes,
   );
-  if (this.reg[ByteRegister.ps].bit(StatusPosition.negative) === 1) return;
+  if (this.reg[ByteRegister.ps].bit(StatusPosition.negative) === 0) return;
   const newAddress = this.pc.sum(value).value;
   this.pc = newAddress;
 }

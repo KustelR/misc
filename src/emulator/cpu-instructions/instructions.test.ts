@@ -20,6 +20,21 @@ import bne from "./bne";
 import bpl from "./bpl";
 import bvc from "./bvc";
 import bvs from "./bvs";
+import clc from "./clc";
+import cld from "./cld";
+import cli from "./cli";
+import clv from "./clv";
+import cmp from "./cmp";
+import cpx from "./cpx";
+import cpy from "./cpy";
+import dec from "./dec";
+import dex from "./dex";
+import dey from "./dey";
+import eor from "./eor";
+import inc from "./inc";
+import inx from "./inx";
+import iny from "./iny";
+import jmp from "./jmp";
 
 const MockCPU = vi.fn(function (this: CPU): CPU {
   this.getValue = (addressingMode: AddressingMode, data: Word[]) => {
@@ -245,7 +260,7 @@ describe("testing BEQ instruction", () => {
   });
 });
 describe("testing BIT instruction", () => {
-  const mockCPU = new MockCPU();
+  let mockCPU = new MockCPU();
   it("should correctly bit test", () => {
     mockCPU.reg[ByteRegister.ida] = new Word(0x02);
     bit.call(
@@ -293,7 +308,7 @@ describe("testing BIT instruction", () => {
     expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(0);
   });
   afterEach(() => {
-    mockCPU.reset();
+    mockCPU = new MockCPU();
   });
 });
 
@@ -353,5 +368,336 @@ describe("testing BVS instruction", () => {
       instruction(CommandType.bvs, AddressingMode.relative, [new Word(0x10)]),
     );
     expect(mockCPU.pc.value).toBe(0x10);
+  });
+});
+
+describe("testing CLC instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should clear carry", () => {
+    mockCPU.setStatus(StatusPosition.carry, true);
+    clc.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(0);
+  });
+});
+describe("testing CLD instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should clear decimal mode", () => {
+    mockCPU.setStatus(StatusPosition.decimal, true);
+    cld.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.decimal)).toBe(0);
+  });
+});
+
+describe("testing CLI instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should clear interrupt flag", () => {
+    mockCPU.setStatus(StatusPosition.irqDisabled, true);
+    cli.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.irqDisabled)).toBe(
+      0,
+    );
+  });
+});
+
+describe("testing CLV instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should clear overflow flag", () => {
+    mockCPU.setStatus(StatusPosition.overflow, true);
+    clv.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.overflow)).toBe(0);
+  });
+});
+
+describe("testing CMP instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should set zero and carry if values same", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x10);
+    mockCPU.getValue = () => new Word(0x10);
+    cmp.call(
+      mockCPU,
+      instruction(CommandType.cmp, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set carry if A > value", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x11);
+    mockCPU.getValue = () => new Word(0x10);
+    cmp.call(
+      mockCPU,
+      instruction(CommandType.cmp, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set negative if 7th bit of A - value is set", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0xf);
+    mockCPU.getValue = () => new Word(0x10);
+    cmp.call(
+      mockCPU,
+      instruction(CommandType.cmp, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing CPX instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should set zero and carry if values same", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x10);
+    mockCPU.getValue = () => new Word(0x10);
+    cpx.call(
+      mockCPU,
+      instruction(CommandType.cpx, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set carry if X > value", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x11);
+    mockCPU.getValue = () => new Word(0x10);
+    cpx.call(
+      mockCPU,
+      instruction(CommandType.cpx, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set negative if 7th bit of X - value is set", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0xf);
+    mockCPU.getValue = () => new Word(0x10);
+    cpx.call(
+      mockCPU,
+      instruction(CommandType.cpx, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing CPY instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should set zero and carry if values same", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x10);
+    mockCPU.getValue = () => new Word(0x10);
+    cpy.call(
+      mockCPU,
+      instruction(CommandType.cpy, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set carry if Y > value", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x11);
+    mockCPU.getValue = () => new Word(0x10);
+    cpy.call(
+      mockCPU,
+      instruction(CommandType.cpy, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set negative if 7th bit of A - value is set", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0xf);
+    mockCPU.getValue = () => new Word(0x10);
+    cmp.call(
+      mockCPU,
+      instruction(CommandType.cmp, AddressingMode.zeroPage, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing DEC instruction", () => {
+  let mockCPU = new MockCPU();
+  let opResult = 0x00;
+  mockCPU.mem = {
+    readByte: () => new Word(0x01),
+    writeByte: (address: any, byte: Word) => {
+      opResult = byte.value;
+    },
+    memory: new Uint8Array(),
+  };
+  it("should decrement value in memory", () => {
+    mockCPU.mem.readByte = () => new Word(0x01);
+    dec.call(
+      mockCPU,
+      instruction(CommandType.dec, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(opResult).toBe(0x0);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.mem.readByte = () => new Word(0x01);
+    dec.call(
+      mockCPU,
+      instruction(CommandType.dec, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.mem.readByte = () => new Word(0x0);
+    dec.call(
+      mockCPU,
+      instruction(CommandType.dec, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing DEX instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should decrement value in IDX", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x0f);
+    dex.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idx].value).toBe(0x0e);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x01);
+    dex.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x00);
+    dex.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing DEY instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should decrement value in IDY", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x0f);
+    dey.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idy].value).toBe(0x0e);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x01);
+    dey.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x00);
+    dey.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing EOR instruction", () => {
+  it("should perform EOR operation with accumulator", () => {
+    let mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x03);
+    mockCPU.getValue = () => new Word(0x01);
+    eor.call(
+      mockCPU,
+      instruction(CommandType.eor, AddressingMode.immediate, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x02);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(0);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(0);
+  });
+  it("should set zero if A is zero", () => {
+    let mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x0f);
+    mockCPU.getValue = () => new Word(0x0f);
+    eor.call(
+      mockCPU,
+      instruction(CommandType.eor, AddressingMode.immediate, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x00);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(0);
+  });
+  it("should set negative if 7th bit of the result is set", () => {
+    let mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x80);
+    mockCPU.getValue = () => new Word(0x0f);
+    eor.call(
+      mockCPU,
+      instruction(CommandType.eor, AddressingMode.immediate, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing INC instruction", () => {
+  let mockCPU = new MockCPU();
+  let opResult = 0x00;
+  mockCPU.mem = {
+    readByte: () => new Word(0x01),
+    writeByte: (address: any, byte: Word) => {
+      opResult = byte.value;
+    },
+    memory: new Uint8Array(),
+  };
+  it("should increment value in memory", () => {
+    inc.call(
+      mockCPU,
+      instruction(CommandType.inc, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(opResult).toBe(0x02);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.mem.readByte = () => new Word(0xff);
+    inc.call(
+      mockCPU,
+      instruction(CommandType.inc, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.mem.readByte = () => new Word(0x80);
+    inc.call(
+      mockCPU,
+      instruction(CommandType.inc, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing INX instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should increment value in IDX", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x0f);
+    inx.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idx].value).toBe(0x10);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0xff);
+    inx.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x80);
+    inx.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing INY instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should decrement value in IDY", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x0f);
+    iny.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idy].value).toBe(0x10);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0xff);
+    iny.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x80);
+    iny.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+describe("testing JMP instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should set pc to target address, treating first byte as least significant, and second byte as most significant", () => {
+    mockCPU.pc = new DoubleWord(0x0000);
+    jmp.call(
+      mockCPU,
+      instruction(CommandType.jmp, AddressingMode.absolute, [
+        new Word(0x01),
+        new Word(0x06),
+      ]),
+    );
+    expect(mockCPU.pc.value).toBe(0x0601);
   });
 });

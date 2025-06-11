@@ -76,9 +76,9 @@ export enum ByteRegister {
 export interface ProcessorStatus {
   carry: boolean;
   zero: boolean;
-  irqDisabled: boolean;
+  interrupt: boolean;
   decimal: boolean;
-  brkCommand: boolean;
+  break: boolean;
   overflow: boolean;
   negative: boolean;
 }
@@ -86,7 +86,7 @@ export interface ProcessorStatus {
 export enum StatusPosition {
   carry,
   zero,
-  irqDisabled,
+  interrupt,
   decimal,
   brkCommand,
   overflow,
@@ -97,9 +97,9 @@ export function statusToReg(status: ProcessorStatus) {
   const register = new Word(0);
   register.value = status.carry ? 1 << StatusPosition.carry : 0;
   register.value |= status.zero ? 1 << StatusPosition.zero : 0;
-  register.value |= status.irqDisabled ? 1 << StatusPosition.irqDisabled : 0;
+  register.value |= status.interrupt ? 1 << StatusPosition.interrupt : 0;
   register.value |= status.decimal ? 1 << StatusPosition.decimal : 0;
-  register.value |= status.brkCommand ? 1 << StatusPosition.brkCommand : 0;
+  register.value |= status.break ? 1 << StatusPosition.brkCommand : 0;
   register.value |= status.overflow ? 1 << StatusPosition.overflow : 0;
   register.value |= status.negative ? 1 << StatusPosition.negative : 0;
   return register;
@@ -109,9 +109,9 @@ export function statusFromReg(register: Word) {
   return {
     carry: !!register.bit(StatusPosition.carry),
     zero: !!register.bit(StatusPosition.zero),
-    irqDisabled: !!register.bit(StatusPosition.irqDisabled),
+    interrupt: !!register.bit(StatusPosition.interrupt),
     decimal: !!register.bit(StatusPosition.decimal),
-    brkCommand: !!register.bit(StatusPosition.brkCommand),
+    break: !!register.bit(StatusPosition.brkCommand),
     overflow: !!register.bit(StatusPosition.overflow),
     negative: !!register.bit(StatusPosition.negative),
   };

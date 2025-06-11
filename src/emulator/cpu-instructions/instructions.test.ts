@@ -428,11 +428,9 @@ describe("testing CLD instruction", () => {
 describe("testing CLI instruction", () => {
   let mockCPU = new MockCPU();
   it("should clear interrupt flag", () => {
-    mockCPU.setStatus(StatusPosition.irqDisabled, true);
+    mockCPU.setStatus(StatusPosition.interrupt, true);
     cli.call(mockCPU);
-    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.irqDisabled)).toBe(
-      0,
-    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.interrupt)).toBe(0);
   });
 });
 
@@ -1130,11 +1128,9 @@ describe("testing SED instruction", () => {
 describe("testing SEI instruction", () => {
   const mockCPU = new MockCPU();
   it("should set interrupt flag", () => {
-    mockCPU.setStatus(StatusPosition.irqDisabled, false);
+    mockCPU.setStatus(StatusPosition.interrupt, false);
     sei.call(mockCPU);
-    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.irqDisabled)).toBe(
-      1,
-    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.interrupt)).toBe(1);
   });
 });
 

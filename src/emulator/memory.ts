@@ -35,7 +35,14 @@ class Word {
   So this treats words as signed integers instead of unsigned as any other method. Yes, this is how 6502 works.
    */
   sub(val: Word): { value: Word; raw: number; isOverflown: boolean } {
-    const res = this.value - val.value;
+    let res = this.value - val.value;
+    if (res < -127) {
+      return {
+        value: new Word(this.value + 256 - val.value),
+        raw: res,
+        isOverflown: true,
+      };
+    }
     return {
       value: new Word(res % 256),
       raw: res,

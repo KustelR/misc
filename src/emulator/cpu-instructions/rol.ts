@@ -8,7 +8,7 @@ export default function rol(this: CPU, instruction: Instruction) {
     instruction.trailingBytes,
   );
 
-  const res = new Word(value.value << 1);
+  const res = new Word((value.value << 1) % 256);
   res.value |= this.reg[ByteRegister.ps].bit(StatusPosition.carry);
 
   if (instruction.command.addressingMode === AddressingMode.accumulator) {
@@ -22,7 +22,6 @@ export default function rol(this: CPU, instruction: Instruction) {
     );
     this.writeMemory(address, res);
   }
-
   this.setStatus(StatusPosition.carry, !!value.bit(7));
   this.setStatus(StatusPosition.negative, !!res.bit(7));
   this.setStatus(StatusPosition.zero, this.reg[ByteRegister.ida].value === 0);

@@ -35,6 +35,32 @@ import inc from "./inc";
 import inx from "./inx";
 import iny from "./iny";
 import jmp from "./jmp";
+import jsr from "./jsr";
+import lda from "./lda";
+import ldx from "./ldx";
+import ldy from "./ldy";
+import lsr from "./lsr";
+import ora from "./ora";
+import pha from "./pha";
+import php from "./php";
+import pla from "./pla";
+import plp from "./plp";
+import rol from "./rol";
+import ror from "./ror";
+import rts from "./rts";
+import sbc from "./sbc";
+import sec from "./sec";
+import sed from "./sed";
+import sei from "./sei";
+import sta from "./sta";
+import stx from "./stx";
+import sty from "./sty";
+import tax from "./tax";
+import tay from "./tay";
+import tsx from "./tsx";
+import txa from "./txa";
+import txs from "./txs";
+import tya from "./tya";
 
 const MockCPU = vi.fn(function (this: CPU): CPU {
   this.getValue = (addressingMode: AddressingMode, data: Word[]) => {
@@ -80,6 +106,17 @@ const MockCPU = vi.fn(function (this: CPU): CPU {
     }
     this.reg[ByteRegister.ps] = status;
   };
+
+  const mockStack: Array<Word> = [];
+  this.pushStack = vi.fn((value: Word) => {
+    mockStack.push(value);
+    this.reg[ByteRegister.sp].increment();
+  });
+
+  this.pullStack = vi.fn(() => {
+    this.reg[ByteRegister.sp].decrement();
+    return mockStack.pop() || new Word(0);
+  });
 
   return this;
 });
@@ -699,5 +736,568 @@ describe("testing JMP instruction", () => {
       ]),
     );
     expect(mockCPU.pc.value).toBe(0x0601);
+  });
+});
+
+describe("testing JSR instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should set pc to target address, treating first byte as least significant, and second byte as most significant", () => {
+    mockCPU.pc = new DoubleWord(0x0000);
+    jsr.call(
+      mockCPU,
+      instruction(CommandType.jsr, AddressingMode.absolute, [
+        new Word(0x01),
+        new Word(0x06),
+      ]),
+    );
+    expect(mockCPU.pc.value).toBe(0x0601);
+  });
+  it("should push return address to stack and increment stack pointer twice", () => {
+    mockCPU.pc = new DoubleWord(0x0102);
+    jsr.call(
+      mockCPU,
+      instruction(CommandType.jsr, AddressingMode.absolute, [
+        new Word(0x01),
+        new Word(0x06),
+      ]),
+    );
+    expect(mockCPU.pullStack().value).toBe(0x01);
+    expect(mockCPU.pullStack().value).toBe(0x02);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0x02);
+  });
+});
+
+describe("testing LDA instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should load value into accumulator", () => {
+    lda.call(
+      mockCPU,
+      instruction(CommandType.lda, AddressingMode.immediate, [new Word(0x01)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x01);
+  });
+  it("should set zero flag if result is zero", () => {
+    lda.call(
+      mockCPU,
+      instruction(CommandType.lda, AddressingMode.immediate, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    lda.call(
+      mockCPU,
+      instruction(CommandType.lda, AddressingMode.immediate, [new Word(0x80)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing LDX instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should load value into X register", () => {
+    ldx.call(
+      mockCPU,
+      instruction(CommandType.ldx, AddressingMode.immediate, [new Word(0x01)]),
+    );
+    expect(mockCPU.reg[ByteRegister.idx].value).toBe(0x01);
+  });
+  it("should set zero flag if result is zero", () => {
+    ldx.call(
+      mockCPU,
+      instruction(CommandType.ldx, AddressingMode.immediate, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    ldx.call(
+      mockCPU,
+      instruction(CommandType.ldx, AddressingMode.immediate, [new Word(0x80)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing LDY instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should load value into Y register", () => {
+    ldy.call(
+      mockCPU,
+      instruction(CommandType.ldy, AddressingMode.immediate, [new Word(0x01)]),
+    );
+    expect(mockCPU.reg[ByteRegister.idy].value).toBe(0x01);
+  });
+  it("should set zero flag if result is zero", () => {
+    ldy.call(
+      mockCPU,
+      instruction(CommandType.ldy, AddressingMode.immediate, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    ldy.call(
+      mockCPU,
+      instruction(CommandType.ldy, AddressingMode.immediate, [new Word(0x80)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing LSR instruction", () => {
+  let mockCPU = new MockCPU();
+  it("should perform logical shift on accumulator", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x01;
+    lsr.call(
+      mockCPU,
+      instruction(CommandType.lsr, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x00);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x01;
+    lsr.call(
+      mockCPU,
+      instruction(CommandType.lsr, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it.skip("should set negative flag if result's bit 7 is set", () => {
+    // ? looks like it is impossible for this instruction result in number bigger than 0x7f therefore negative flag will be always off
+    mockCPU.reg[ByteRegister.ida].value = 0xff;
+    lsr.call(
+      mockCPU,
+      instruction(CommandType.lsr, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+describe.skip("testing nop operation... Well this is done in the emulator...");
+describe("testing ORA instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should perform OR operation with accumulator", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x01;
+    ora.call(
+      mockCPU,
+      instruction(CommandType.ora, AddressingMode.immediate, [new Word(0x01)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x01);
+  });
+  it("should set zero flag if result is zero", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x00;
+    ora.call(
+      mockCPU,
+      instruction(CommandType.ora, AddressingMode.immediate, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if result's bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x80;
+    ora.call(
+      mockCPU,
+      instruction(CommandType.ora, AddressingMode.immediate, [new Word(0x80)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+describe("testing PHA instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should push accumulator onto stack", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x01;
+    pha.call(mockCPU);
+    expect(mockCPU.pullStack().value).toBe(0x01);
+  });
+  it("should update stack pointer", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x01;
+    pha.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0x1);
+  });
+});
+
+describe("testing PHP instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should push processor status onto stack", () => {
+    mockCPU.reg[ByteRegister.ps].value = 0x01;
+    php.call(mockCPU);
+    expect(mockCPU.pullStack().value).toBe(0x01);
+  });
+  it("should update stack pointer", () => {
+    mockCPU.reg[ByteRegister.ps].value = 0x01;
+    php.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0x1);
+  });
+});
+
+describe("testing PLA instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should pull accumulator from stack", () => {
+    mockCPU.pushStack(new Word(0x01));
+    pla.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x01);
+  });
+  it("should update stack pointer", () => {
+    mockCPU.reg[ByteRegister.ida].value = 0x01;
+    pla.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0xff);
+  });
+});
+
+describe("testing PLP instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should pull processor status from stack", () => {
+    mockCPU.pushStack(new Word(0x01));
+    plp.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].value).toBe(0x01);
+  });
+  it("should update stack pointer", () => {
+    mockCPU.reg[ByteRegister.ps].value = 0x01;
+    plp.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0xff);
+  });
+});
+
+describe("testing ROL instuction", () => {
+  it("should correctly rotate left accumulator", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida].value = 0b10000001;
+    mockCPU.setStatus(StatusPosition.carry, false);
+    rol.call(
+      mockCPU,
+      instruction(CommandType.rol, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0b00000010);
+  });
+  it("should set carry to old contents of bit 7", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida].value = 0b10000000;
+    rol.call(
+      mockCPU,
+      instruction(CommandType.rol, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set zero if A is zero", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida].value = 0x0;
+    rol.call(
+      mockCPU,
+      instruction(CommandType.rol, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+});
+
+describe("testing ROR instruction", () => {
+  it("should correctly rotate right accumulator", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida].value = 0b10000001;
+    mockCPU.setStatus(StatusPosition.carry, false);
+    ror.call(
+      mockCPU,
+      instruction(CommandType.ror, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0b01000000);
+  });
+  it("should set carry to old contents of bit 0", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida].value = 0b00000001;
+    ror.call(
+      mockCPU,
+      instruction(CommandType.ror, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should set zero if A is zero", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida].value = 0x0;
+    ror.call(
+      mockCPU,
+      instruction(CommandType.ror, AddressingMode.accumulator, []),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+});
+describe.skip("here should be RTI, but it is not implemented here");
+describe("testing RTS instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should pull program counter from stack", () => {
+    mockCPU.pushStack(new Word(0x01));
+    rts.call(mockCPU);
+    expect(mockCPU.pc.value).toBe(0x0001);
+  });
+  it("should update stack pointer", () => {
+    mockCPU.reg[ByteRegister.sp].value = 0x00;
+    rts.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0xfe);
+  });
+});
+
+describe("testing SBC instruction", () => {
+  it("should subtract two numbers correctly if carry set", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x2);
+    mockCPU.setStatus(StatusPosition.carry, true);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0x1)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x1);
+  });
+  it("should set carry if there is no borrow", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x2);
+    mockCPU.setStatus(StatusPosition.carry, true);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0x1)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+  it("should unset carry if borrow occured", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x0);
+    mockCPU.setStatus(StatusPosition.carry, true);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0xff)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(0);
+  });
+  it("should correctly handle borrows", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x0);
+    mockCPU.setStatus(StatusPosition.carry, true);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0xff)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(1);
+  });
+  it("should subtract two numbers and 1 if carry clear", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x2);
+    mockCPU.setStatus(StatusPosition.carry, false);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0x1)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x0);
+  });
+  it("should flag overflow if sign bit is incorrect", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x82);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0x81)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.overflow)).toBe(1);
+  });
+  it("should flag negative if bit 7 is set", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x0);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0x1)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+  it("should flag zero only", () => {
+    const mockCPU = new MockCPU();
+    mockCPU.reg[ByteRegister.ida] = new Word(0x00);
+    sbc.call(
+      mockCPU,
+      instruction(CommandType.sbc, AddressingMode.immediate, [new Word(0x00)]),
+    );
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+});
+describe("testing SEC instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should set carry flag", () => {
+    mockCPU.setStatus(StatusPosition.carry, false);
+    sec.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.carry)).toBe(1);
+  });
+});
+
+describe("testing SED instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should set decimal flag", () => {
+    mockCPU.setStatus(StatusPosition.decimal, false);
+    sed.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.decimal)).toBe(1);
+  });
+});
+
+describe("testing SEI instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should set interrupt flag", () => {
+    mockCPU.setStatus(StatusPosition.irqDisabled, false);
+    sei.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.irqDisabled)).toBe(
+      1,
+    );
+  });
+});
+
+describe("testing STA instruction", () => {
+  const mockCPU = new MockCPU();
+  mockCPU.writeMemory = vi.fn();
+  it("should store accumulator", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x42);
+    sta.call(
+      mockCPU,
+      instruction(CommandType.sta, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.writeMemory).toHaveBeenCalledWith(
+      new DoubleWord(0x00),
+      new Word(0x42),
+    );
+  });
+});
+
+describe("testing STX instruction", () => {
+  const mockCPU = new MockCPU();
+  mockCPU.writeMemory = vi.fn();
+  it("should store x register", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x42);
+    stx.call(
+      mockCPU,
+      instruction(CommandType.stx, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.writeMemory).toHaveBeenCalledWith(
+      new DoubleWord(0x00),
+      new Word(0x42),
+    );
+  });
+});
+
+describe("testing STY instruction", () => {
+  const mockCPU = new MockCPU();
+  mockCPU.writeMemory = vi.fn();
+  it("should store y register", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x42);
+    sty.call(
+      mockCPU,
+      instruction(CommandType.sty, AddressingMode.zeroPage, [new Word(0x00)]),
+    );
+    expect(mockCPU.writeMemory).toHaveBeenCalledWith(
+      new DoubleWord(0x00),
+      new Word(0x42),
+    );
+  });
+});
+describe("testing TAX instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should move A to X", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x42);
+    tax.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idx].value).toBe(0x42);
+  });
+  it("should set zero flag if X = 0", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x00);
+    mockCPU.reg[ByteRegister.idx] = new Word(0x00);
+    tax.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x80);
+    tax.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing TAY instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should move A to Y", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x42);
+    tay.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idy].value).toBe(0x42);
+  });
+  it("should set zero flag if Y = 0", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x00);
+    mockCPU.reg[ByteRegister.idy] = new Word(0x00);
+    tay.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.ida] = new Word(0x80);
+    tay.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing TSX instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should move SP to X", () => {
+    mockCPU.reg[ByteRegister.sp] = new Word(0x42);
+    tsx.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.idx].value).toBe(0x42);
+  });
+  it("should set zero flag if X = 0", () => {
+    mockCPU.reg[ByteRegister.sp] = new Word(0x00);
+    mockCPU.reg[ByteRegister.idx] = new Word(0x00);
+    tsx.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.sp] = new Word(0x80);
+    tsx.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing TXA instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should move X to A", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x42);
+    txa.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x42);
+  });
+  it("should set zero flag if X = 0", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x00);
+    txa.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x80);
+    txa.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing TXS instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should move X to SP", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x42);
+    txs.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.sp].value).toBe(0x42);
+  });
+  it("should set zero flag if X = 0", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x00);
+    txs.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idx] = new Word(0x80);
+    txs.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
+  });
+});
+
+describe("testing TYA instruction", () => {
+  const mockCPU = new MockCPU();
+  it("should move Y to A", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x42);
+    tya.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ida].value).toBe(0x42);
+  });
+  it("should set zero flag if Y = 0", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x00);
+    tya.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.zero)).toBe(1);
+  });
+  it("should set negative flag if bit 7 is set", () => {
+    mockCPU.reg[ByteRegister.idy] = new Word(0x80);
+    tya.call(mockCPU);
+    expect(mockCPU.reg[ByteRegister.ps].bit(StatusPosition.negative)).toBe(1);
   });
 });

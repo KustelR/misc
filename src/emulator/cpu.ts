@@ -78,7 +78,7 @@ export interface ProcessorStatus {
   zero: boolean;
   interrupt: boolean;
   decimal: boolean;
-  break: boolean;
+  brk: boolean;
   overflow: boolean;
   negative: boolean;
 }
@@ -99,19 +99,19 @@ export function statusToReg(status: ProcessorStatus) {
   register.value |= status.zero ? 1 << StatusPosition.zero : 0;
   register.value |= status.interrupt ? 1 << StatusPosition.interrupt : 0;
   register.value |= status.decimal ? 1 << StatusPosition.decimal : 0;
-  register.value |= status.break ? 1 << StatusPosition.brkCommand : 0;
+  register.value |= status.brk ? 1 << StatusPosition.brkCommand : 0;
   register.value |= status.overflow ? 1 << StatusPosition.overflow : 0;
   register.value |= status.negative ? 1 << StatusPosition.negative : 0;
   return register;
 }
 
-export function statusFromReg(register: Word) {
+export function statusFromReg(register: Word): ProcessorStatus {
   return {
     carry: !!register.bit(StatusPosition.carry),
     zero: !!register.bit(StatusPosition.zero),
     interrupt: !!register.bit(StatusPosition.interrupt),
     decimal: !!register.bit(StatusPosition.decimal),
-    break: !!register.bit(StatusPosition.brkCommand),
+    brk: !!register.bit(StatusPosition.brkCommand),
     overflow: !!register.bit(StatusPosition.overflow),
     negative: !!register.bit(StatusPosition.negative),
   };

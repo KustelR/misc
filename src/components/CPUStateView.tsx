@@ -1,7 +1,7 @@
 "use client";
 
 import MemoryView from "@/components/MemoryView";
-import { CPU, ByteRegister, CPURegisters } from "@/emulator/cpu";
+import { CPU, ByteRegister, CPURegisters, ProcessorStatus } from "@/emulator/cpu";
 import { DoubleWord, Word } from "@/emulator/memory";
 import { formatByte } from "@/utils/formatByte";
 import { useEffect, useState } from "react";
@@ -86,16 +86,8 @@ function ProgramCounter(props: { value: number }) {
   );
 }
 
-function Flags(props: {
-  carry: boolean;
-  zero: boolean;
-  irqDisabled: boolean;
-  decimal: boolean;
-  brkCommand: boolean;
-  overflow: boolean;
-  negative: boolean;
-}) {
-  const { carry, zero, irqDisabled, decimal, brkCommand, overflow, negative } =
+function Flags(props: ProcessorStatus) {
+  const { carry, zero, interrupt, decimal, brk, overflow, negative } =
     props;
   return (
     <div className="space-y-1">
@@ -105,9 +97,9 @@ function Flags(props: {
       <div className="grid grid-cols-3 space-x-1 space-y-1">
         <FlagView header="Carry" value={carry} />
         <FlagView header="Zero" value={zero} />
-        <FlagView header="IRQ dis" value={irqDisabled} />
+        <FlagView header="IRQ dis" value={interrupt} />
         <FlagView header="Decimal" value={decimal} />
-        <FlagView header="BRK cmd" value={brkCommand} />
+        <FlagView header="BRK cmd" value={brk} />
         <FlagView header="Overflow" value={overflow} />
         <FlagView header="Negative" value={negative} />
       </div>

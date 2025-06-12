@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import {
   arithmeticResultFlags,
   ByteRegister,
+  CPU,
   CPURegisters,
   getMemoryAddress,
   statusFromReg,
+  StatusPosition,
   statusToReg,
 } from "./cpu";
 import { DoubleWord, Memory, Word } from "./memory";
-import { AddressingMode } from "./instructions";
+import { AddressingMode, cmdToByte, CommandType } from "./instructions";
 import { MemoryError } from "./errors";
+import { Stack } from "./stack";
 
 describe("testing statusToReg()", () => {
   it("should convert status flags to register", () => {
@@ -244,5 +247,259 @@ describe("testing arithmeticResultFlags()", () => {
     const result = 0x100;
     const flags = arithmeticResultFlags(result);
     expect(flags).toHaveProperty("carry", true);
+  });
+});
+describe("testing CPU class", () => {
+  describe("testing .updateArithmeticStatuses()", () => {
+    it("should set everything correctly", () => {
+      const cpu = new CPU();
+      cpu.updateArithmeticStatuses({
+        negative: true,
+        zero: true,
+        carry: true,
+      });
+      const status = cpu.getProcessorStatus();
+      expect(status).toHaveProperty("negative", true);
+      expect(status).toHaveProperty("zero", true);
+      expect(status).toHaveProperty("carry", true);
+    });
+  });
+  describe("testing .reset()", () => {
+    it("should set PS to 0x00", () => {
+      const cpu = new CPU();
+      cpu.reg[ByteRegister.ps] = new Word(0xff);
+      cpu.reset();
+      expect(cpu.reg[ByteRegister.ps]).toEqual(new Word(0x00));
+    });
+    it("should set PC to 0x00", () => {
+      const cpu = new CPU();
+      cpu.pc = new DoubleWord(0xffff);
+      cpu.reset();
+      expect(cpu.pc).toEqual(new DoubleWord(0x0000));
+    });
+    it("should set SP to 0x00 and clear stack", () => {
+      const cpu = new CPU();
+      cpu.reg[ByteRegister.sp] = new Word(0xff);
+      cpu.reset();
+      expect(cpu.reg[ByteRegister.sp]).toEqual(new Word(0x00));
+      expect(cpu["stack"]).toEqual(new Stack());
+    });
+    it("should clear cycles", () => {
+      const cpu = new CPU();
+      cpu["cycles"] = 1000;
+      cpu.reset();
+
+      expect(cpu["cycles"]).toEqual(0);
+    });
+    it("should NOT clear listeners", () => {
+      const cpu = new CPU();
+      cpu.addCyclesListener(() => {});
+      cpu.addMemoryListener(() => {});
+      cpu.addRegisterListener(() => {});
+      cpu.reset();
+      expect(cpu["memoryListeners"].length).toEqual(1);
+      expect(cpu["registerListeners"].length).toEqual(1);
+      expect(cpu["cyclesListeners"].length).toEqual(1);
+    });
+  });
+  describe("testing .pushStack()", () => {
+    it("should push value onto stack and increment SP", () => {
+      const cpu = new CPU();
+      cpu.pushStack(new Word(0x42));
+      expect(cpu.reg[ByteRegister.sp]).toEqual(new Word(0x01));
+      expect(cpu.pullStack()).toEqual(new Word(0x42));
+    });
+    it("should pull value from stack and decrement SP", () => {
+      const cpu = new CPU();
+      cpu.pushStack(new Word(0x42));
+      expect(cpu.reg[ByteRegister.sp]).toEqual(new Word(0x01));
+      expect(cpu.pullStack()).toEqual(new Word(0x42));
+      expect(cpu.reg[ByteRegister.sp]).toEqual(new Word(0x00));
+    });
+  });
+  describe("testing .setStatus()", () => {
+    it("should set carry", () => {
+      const cpu = new CPU();
+      cpu.setStatus(StatusPosition.carry, true);
+      expect(cpu.getProcessorStatus()).toHaveProperty("carry", true);
+    });
+    it("should clear carry", () => {
+      const cpu = new CPU();
+      cpu.setStatus(StatusPosition.carry, true);
+      cpu.setStatus(StatusPosition.carry, false);
+      expect(cpu.getProcessorStatus()).toHaveProperty("carry", false);
+    });
+  });
+  describe("testing .toggleStatus()", () => {
+    it("should toggle carry", () => {
+      const cpu = new CPU();
+      cpu.setStatus(StatusPosition.carry, false);
+      cpu.toggleStatus(StatusPosition.carry);
+      cpu.toggleStatus(StatusPosition.carry);
+      cpu.toggleStatus(StatusPosition.carry);
+      expect(cpu.getProcessorStatus()).toHaveProperty("carry", true);
+    });
+  });
+  describe("testing .writeMemory()", () => {
+    it("should write to memory", () => {
+      const cpu = new CPU();
+      cpu.writeMemory(new DoubleWord(0x0000), new Word(0x42));
+      expect(cpu.mem.readByte(new DoubleWord(0x0000))).toEqual(new Word(0x42));
+    });
+  });
+  describe("testing listeners", () => {
+    const cpu = new CPU();
+    const cycleListener = vi.fn();
+    const memoryListener = vi.fn();
+    const registerListener = vi.fn();
+    it("should add listener to cycles", () => {
+      cpu.addCyclesListener(cycleListener);
+      expect(cpu["cyclesListeners"]).toContain(cycleListener);
+    });
+    it("should add listener to memory", () => {
+      cpu.addMemoryListener(memoryListener);
+      expect(cpu["memoryListeners"]).toContain(memoryListener);
+    });
+    it("should add listener to registers", () => {
+      cpu.addRegisterListener(registerListener);
+      expect(cpu["registerListeners"]).toContain(registerListener);
+    });
+    it("should run only cycles listener if memory and registers did not change", () => {
+      cpu.step();
+      expect(cycleListener).toHaveBeenCalled();
+      expect(memoryListener).not.toHaveBeenCalled();
+      expect(registerListener).not.toHaveBeenCalled();
+    });
+  });
+  describe("testing .setProgramCounter()", () => {
+    it("should set the program counter", () => {
+      const cpu = new CPU();
+      cpu.setProgramCounter(new DoubleWord(0x1234));
+      expect(cpu.pc).toEqual(new DoubleWord(0x1234));
+    });
+    it("should call register listeners", () => {
+      const cpu = new CPU();
+      const registerListener = vi.fn();
+      cpu.addRegisterListener(registerListener);
+      cpu.setProgramCounter(new DoubleWord(0x1234));
+      expect(registerListener).toHaveBeenCalled();
+    });
+  });
+  describe("testing .getValue()", () => {
+    it("[accumulator] should return accumulator", () => {
+      const cpu = new CPU();
+      cpu.reg[ByteRegister.ida] = new Word(0x42);
+      expect(cpu.getValue(AddressingMode.accumulator, [])).toEqual(
+        new Word(0x42),
+      );
+    });
+    it("[immediate] should return first byte of the instruction", () => {
+      const cpu = new CPU();
+      expect(cpu.getValue(AddressingMode.immediate, [new Word(0x42)])).toEqual(
+        new Word(0x42),
+      );
+    });
+    it("[relative] should return first byte of the instruction", () => {
+      const cpu = new CPU();
+      expect(cpu.getValue(AddressingMode.relative, [new Word(0x42)])).toEqual(
+        new Word(0x42),
+      );
+    });
+    it("[others] should return same result as getMemoryAddress()", () => {
+      const cpu = new CPU();
+      expect(cpu.getValue(AddressingMode.zeroPage, [new Word(0x00)])).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.zeroPage, [
+          new Word(0x00),
+        ]),
+      );
+      expect(cpu.getValue(AddressingMode.zeroPageX, [new Word(0x00)])).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.zeroPageX, [
+          new Word(0x00),
+        ]),
+      );
+      expect(cpu.getValue(AddressingMode.zeroPageY, [new Word(0x00)])).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.zeroPageY, [
+          new Word(0x00),
+        ]),
+      );
+      expect(
+        cpu.getValue(AddressingMode.absolute, [new Word(0x00), new Word(0x00)]),
+      ).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.absolute, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      );
+      expect(
+        cpu.getValue(AddressingMode.absoluteX, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      ).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.absoluteX, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      );
+      expect(
+        cpu.getValue(AddressingMode.absoluteY, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      ).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.absoluteY, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      );
+
+      expect(
+        cpu.getValue(AddressingMode.indirect, [new Word(0x00), new Word(0x00)]),
+      ).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.indirect, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      );
+      expect(
+        cpu.getValue(AddressingMode.indirectX, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      ).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.indirectX, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      );
+      expect(
+        cpu.getValue(AddressingMode.indirectY, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      ).toEqual(
+        getMemoryAddress(cpu.reg, cpu["memory"], AddressingMode.indirectY, [
+          new Word(0x00),
+          new Word(0x00),
+        ]),
+      );
+    });
+  });
+  describe("testing .readInstruction()", () => {
+    it("should read instruction from memory", () => {
+      const cpu = new CPU();
+      const command = {
+        commandType: CommandType.lda,
+        addressingMode: AddressingMode.immediate,
+      };
+      cpu.writeMemory(cpu["programCounter"], cmdToByte(command));
+      cpu.writeMemory(cpu["programCounter"].sum(1).value, new Word(0x1));
+      const { instruction, offset } = cpu.readInstruction();
+      expect(instruction).toEqual({
+        command: command,
+        trailingBytes: [new Word(0x1)],
+      });
+      expect(offset).toBe(1);
+    });
   });
 });

@@ -361,14 +361,14 @@ export function getMemoryAddress(
 
     case AddressingMode.absoluteX: {
       return new DoubleWord(
-        data[0].value |
-          ((data[1].value << 8) + registers[ByteRegister.idx].value),
+        (data[0].value | (data[1].value << 8)) +
+          registers[ByteRegister.idx].value,
       );
     }
     case AddressingMode.absoluteY: {
       return new DoubleWord(
-        data[0].value |
-          ((data[1].value << 8) + registers[ByteRegister.idy].value),
+        (data[0].value | (data[1].value << 8)) +
+          registers[ByteRegister.idy].value,
       );
     }
 

@@ -268,7 +268,6 @@ export class CPU {
         return data[0];
       case AddressingMode.accumulator:
         return this.reg[ByteRegister.ida];
-      case AddressingMode.zeroPage:
       default:
         return this.memory.readByte(
           getMemoryAddress(this.registers, this.memory, mode, data),

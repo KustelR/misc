@@ -126,7 +126,7 @@ export function byteToCmd(data: Word): Command | undefined {
   return instructionSet[data.value];
 }
 
-export function cmdToByte(cmd: Command): Word | undefined {
+export function cmdToByte(cmd: Command): Word {
   return new Word(bytesByCommand[cmd.commandType][cmd.addressingMode]);
 }
 

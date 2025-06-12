@@ -19,7 +19,7 @@ describe("testing statusToReg()", () => {
     const status = {
       negative: true,
       overflow: false,
-      break: false,
+      brk: false,
       decimal: false,
       interrupt: false,
       zero: false,
@@ -36,7 +36,7 @@ describe("testing statusFromReg()", () => {
     const status = statusFromReg(reg);
     expect(status.negative).toBe(true);
     expect(status.overflow).toBe(false);
-    expect(status.break).toBe(false);
+    expect(status.brk).toBe(false);
     expect(status.decimal).toBe(false);
     expect(status.interrupt).toBe(false);
     expect(status.zero).toBe(false);

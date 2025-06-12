@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  arithmeticResultFlags,
   ByteRegister,
   CPURegisters,
   getMemoryAddress,
@@ -225,5 +226,23 @@ describe("testing getMemoryAddress()", () => {
       [new Word(0x0)],
     );
     expect(address.value).toBe(0x0104);
+  });
+});
+
+describe("testing arithmeticResultFlags()", () => {
+  it("should return negative flag when result is negative", () => {
+    const result = new Word(0xff);
+    const flags = arithmeticResultFlags(result);
+    expect(flags).toHaveProperty("negative", true);
+  });
+  it("should return zero flag when result is zero", () => {
+    const result = new Word(0x00);
+    const flags = arithmeticResultFlags(result);
+    expect(flags).toHaveProperty("zero", true);
+  });
+  it("should return overflow flag when result is overflown", () => {
+    const result = 0x100;
+    const flags = arithmeticResultFlags(result);
+    expect(flags).toHaveProperty("carry", true);
   });
 });

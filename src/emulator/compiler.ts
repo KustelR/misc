@@ -6,13 +6,14 @@ import {
   getAddressingModes,
 } from "./instructions";
 import { DoubleWord, Word } from "./memory";
+import { C } from "vitest/dist/chunks/reporters.d.C1ogPriE.js";
 
 interface Line {
   line: string;
   position: number;
 }
 
-const tokenRegex = /([{};:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)/gm;
+const tokenRegex = /((?:\*[+-])?[{};:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)\)?/gm;
 const byteRegex = /[0-9a-f]{1,2}/gm;
 const signRegex = /^[+-]/;
 
@@ -27,15 +28,13 @@ const definitionRegex = /^define\s+([a-zA-Z_][a-zA-Z0-9_]*)\s[\$][a-zA-Z0-9]+$/;
 const accumulatorAddressRegex = /^A$/;
 const zeroPageAddressRegex = /\$[0-9a-f]{1,2}$/;
 const absoluteAddressRegex = /\$[0-9a-f]{4}$/;
-const zeroPageXAddressRegex = /\$[0-9a-f]{1,2},\s?[xX]/;
+const zeroPageXAddressRegex = /^(?!\()\$[0-9a-f]{1,2},\s?[xX]/;
 const zeroPageYAddressRegex = /\$[0-9a-f]{1,2},\s?[yY]/;
 const absoluteXAddressRegex = /\$[0-9a-f]{4},\s?[xX]/;
-const indirectAddressRegex = /\(\$[0-9a-f]{4}\)/;
+const indirectAddressRegex = /\(\$[0-9a-f]{4}\)$/;
 const absoluteYAddressRegex = /\$[0-9a-f]{4},\s?[yY]/;
-const indirectXAddressRegex = /\$\([0-9a-f]{4},\s?X\)/;
-const indirectYAddressRegex = /\$\([0-9a-f]{4}\),\s?Y/;
-
-const markedForReplaceRegex = /\{.*\}/gm;
+const indirectXAddressRegex = /[0-9a-f]{1,2},\s?[xX]/;
+const indirectYAddressRegex = /\(\$[0-9a-f]{2}\),\s?Y/;
 
 export function compile(
   source: string,
@@ -60,6 +59,7 @@ function preassemble(source: string): {
   const constants: { [key: string]: string } = {};
   lines.forEach((line, index) => {
     const trimmed = line.trim();
+    const tokens = tokenize(line);
     const { isDefinition, isLabel, hasReference } = getLineType(trimmed);
 
     if (isLabel) {
@@ -67,34 +67,36 @@ function preassemble(source: string): {
       labels[match.slice(0, -1)] = index;
     }
     if (isDefinition) {
-      const tokens = trimmed.match(tokenRegex);
       if (tokens && tokens.length > 1) {
         constants[tokens[1]] = tokens[2];
       }
     }
 
     if (hasReference) {
-      let modifiedLine = "";
-      const tokens = trimmed.match(tokenRegex)!;
-      const label = tokens[1].match(/[a-zA-Z_][a-zA-Z_0-9]*/)![0];
-      if (label in labels) {
-        modifiedLine = trimmed.replace(label, `{${label}}`);
-      }
-      if (label in constants) {
-        modifiedLine = trimmed.replace(label, constants[label]);
-      }
-      if (!modifiedLine) {
-        if (!ambiguosReferenceRegex.test(trimmed)) {
-          throw new Error(`Undefined label or constant: ${label}`);
-        }
-        result.push(trimmed);
-      }
-      result.push(modifiedLine);
+      tokens[1] = processReference(tokens[1], labels, constants);
+      result.push(tokens.join(" "));
       return;
     }
     result.push(trimmed);
   });
   return { lines: result, labels };
+}
+
+export function processReference(
+  token: string,
+  labels: { [key: string]: number },
+  constants: { [key: string]: string },
+): string {
+  const label = token.match(/[a-zA-Z_][a-zA-Z_0-9]*/)![0];
+  if (labels[label]) return `{${label}}`;
+  if (constants[label]) {
+    if (!/^[$#]/.test(token[0])) {
+      throw new Error("Reference should start with # or $");
+    }
+    return `${token[0]}${constants[label]}`;
+  }
+
+  throw new Error(`Undefined label or constant: ${token}`);
 }
 
 function assemble(
@@ -140,26 +142,17 @@ function assembleLine(
     let instruction: CommandType | undefined;
     let addressingMode: AddressingMode | undefined;
 
-    instruction = CommandType[tokens[0] as keyof typeof CommandType];
+    instruction = getCmdFromToken(tokens[0]);
 
-    if (!instruction)
-      throw new Error(`Unknown instruction at line ${position}: ${tokens[0]}`);
+    if (instruction === undefined)
+      throw new Error(
+        `Unknown instruction at line ${position + 1}: ${tokens[0]}`,
+      );
 
-    let addressToken = "";
-    if (tokens[1] && markedForReplaceRegex.test(tokens[1])) {
-      const target = tokens[1].slice(1, -1);
-      if (target in labelAddresses) {
-        addressToken =
-          "$" +
-          formatByte(labelAddresses[target].most(), true) +
-          formatByte(labelAddresses[target].least(), true);
-      }
-    } else if (tokens[1]) {
-      addressToken = tokens[1];
-    }
+    let addressToken = tokens.length > 1 ? tokens[1] : undefined;
 
     try {
-      addressingMode = getAddressMode(instruction, tokens.length, addressToken);
+      addressingMode = getAddressMode(instruction, addressToken);
     } catch (e) {
       throw new Error(
         `Can't determine addressing mode at  line ${position} (byte 0x${(offset.value + 1).toString(16)})\n${e}`,
@@ -187,16 +180,19 @@ function assembleLine(
   return result;
 }
 
-function getAddressMode(
+export function getCmdFromToken(token: string): CommandType | undefined {
+  return CommandType[token.toLowerCase() as keyof typeof CommandType];
+}
+
+export function getAddressMode(
   commandType: CommandType,
-  tokensLength: number,
-  addressToken: string,
+  addressToken?: string,
 ): AddressingMode {
-  const trimmed = addressToken.trim();
-  if (tokensLength === 1) {
+  if (!addressToken) {
     const addressingModes = getAddressingModes(commandType);
     return Number(Object.entries(addressingModes[0]));
   }
+  const trimmed = addressToken.trim();
   if (accumulatorAddressRegex.test(trimmed)) return AddressingMode.accumulator;
   if (trimmed.startsWith("#")) return AddressingMode.immediate;
   if (zeroPageAddressRegex.test(trimmed)) return AddressingMode.zeroPage;
@@ -242,4 +238,9 @@ function getLineType(line: string): {
   const hasReference = labelReferenceRegex.test(line);
 
   return { isDefinition, isLabel, hasReference };
+}
+
+export function tokenize(raw: string): Array<string> {
+  const tokens = raw.trim().match(tokenRegex)!;
+  return tokens;
 }

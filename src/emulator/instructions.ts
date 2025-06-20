@@ -76,6 +76,22 @@ export enum AddressingMode {
   relative,
 }
 
+export function testBranchInstruction(command: CommandType): boolean {
+  switch (command) {
+    case CommandType.bcc:
+    case CommandType.bcs:
+    case CommandType.beq:
+    case CommandType.bmi:
+    case CommandType.bne:
+    case CommandType.bpl:
+    case CommandType.bvc:
+    case CommandType.bvs:
+      return true;
+    default:
+      return false;
+  }
+}
+
 export interface Command {
   commandType: CommandType;
   addressingMode: AddressingMode;

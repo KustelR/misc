@@ -89,6 +89,21 @@ class DoubleWord {
     const res = this.value + (typeof val == "number" ? val : val.value);
     return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };
   }
+  sumSigned(val: DoubleWord | Word | number): {
+    value: DoubleWord;
+    isOverflown: boolean;
+  } {
+    let argument: number;
+    if (typeof val === "number") argument = val;
+    else {
+      argument = val.isNegative() ? -1 : 1 * val.value;
+    }
+    const res = this.value + argument;
+    return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };
+  }
+  isNegative(): boolean {
+    return this.value >> 15 > 0;
+  }
 }
 
 class Memory {

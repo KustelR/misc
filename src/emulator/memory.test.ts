@@ -115,6 +115,16 @@ describe("testing DoubleWord class", () => {
     const result = doubleWord.sum(word);
     expect(result.value.value).toBe(0x1235);
   });
+  it("should sum with sign correctly", () => {
+    const doubleWord = new DoubleWord(0x1234);
+    const word = new Word(0x81);
+    const result = doubleWord.sumSigned(word);
+    expect(result.value.value).toBe(0x1233);
+  });
+  it("should return true if negative", () => {
+    const word = new DoubleWord(0xffff);
+    expect(word.isNegative()).toBe(true);
+  });
 });
 describe("testing class memory", () => {
   it("should create a Memory instance", () => {

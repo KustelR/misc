@@ -7,6 +7,6 @@ export default function bcs(this: CPU, instruction: Instruction) {
     instruction.trailingBytes,
   );
   if (this.reg[ByteRegister.ps].bit(StatusPosition.carry) === 0) return;
-  const newAddress = this.pc.sum(value).value;
+  const newAddress = this.pc.sumSigned(value).value;
   this.pc = newAddress;
 }

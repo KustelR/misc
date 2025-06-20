@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   getAddressMode,
+  getArgumentBytes,
   getCmdFromToken,
+  getLineType,
   processReference,
+  replaceLabels,
   tokenize,
 } from "./compiler";
 import { AddressingMode, CommandType } from "./instructions";
+import { DoubleWord, Word } from "./memory";
 
 const INSTRUCTIONS = [
   "adc",
@@ -199,5 +203,102 @@ describe("testing processReference()", () => {
     const constants = { myConst: "1111" };
     const f = () => processReference(".myConst", labels, constants);
     expect(f).toThrowError("Reference should start with # or $");
+  });
+});
+
+describe("testing getLineType()", () => {
+  it("should detect definition", () => {
+    const result = getLineType("define myConst $1111");
+    expect(result).toEqual({
+      isDefinition: true,
+      isLabel: false,
+      hasReference: false,
+    });
+  });
+  it("should detect label", () => {
+    const result = getLineType("myLabel:");
+    expect(result).toEqual({
+      isDefinition: false,
+      isLabel: true,
+      hasReference: false,
+    });
+  });
+  it("should detect reference", () => {
+    const result = getLineType("jmp myLabel");
+    expect(result).toEqual({
+      isDefinition: false,
+      isLabel: false,
+      hasReference: true,
+    });
+  });
+  it("should detect nothing", () => {
+    const result = getLineType("nop");
+    expect(result).toEqual({
+      isDefinition: false,
+      isLabel: false,
+      hasReference: false,
+    });
+  });
+});
+
+describe("testing replaceLabels()", () => {
+  it("should replace label with address", () => {
+    const result = replaceLabels(
+      "{myLabel}",
+      {
+        myLabel: new DoubleWord(0x2000),
+      },
+      new DoubleWord(0x1),
+    );
+    expect(result).toEqual("$2000");
+  });
+  it("should replace label with positive relative address", () => {
+    const result = replaceLabels(
+      "{myLabel}",
+      {
+        myLabel: new DoubleWord(0x610),
+      },
+      new DoubleWord(0x600),
+      true,
+    );
+    expect(result).toEqual("*+10");
+  });
+  it("should replace label with negative relative address", () => {
+    const result = replaceLabels(
+      "{myLabel}",
+      {
+        myLabel: new DoubleWord(0x600),
+      },
+      new DoubleWord(0x610),
+      true,
+    );
+    expect(result).toEqual("*-10");
+  });
+});
+
+describe("testing getArgumentBytes()", () => {
+  it("should return bytes for immediate values", () => {
+    const result = getArgumentBytes("#$01");
+    expect(result).toEqual([new Word(0x01)]);
+  });
+  it("should return bytes for zero page addresses", () => {
+    const result = getArgumentBytes("$01");
+    expect(result).toEqual([new Word(0x01)]);
+  });
+  it("should return bytes for absolute addresses", () => {
+    const result = getArgumentBytes("$0001");
+    expect(result).toEqual([new Word(0x01), new Word(0x00)]);
+  });
+  it("should return bytes for indirect addresses", () => {
+    const result = getArgumentBytes("($0001)");
+    expect(result).toEqual([new Word(0x01), new Word(0x00)]);
+  });
+  it("should return bytes for relative addresses", () => {
+    const result = getArgumentBytes("*+01");
+    expect(result).toEqual([new Word(0x01)]);
+  });
+  it("should return bytes for relative negative addresses", () => {
+    const result = getArgumentBytes("*-01");
+    expect(result).toEqual([new Word(0x81)]);
   });
 });

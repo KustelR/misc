@@ -4,9 +4,9 @@ import {
   cmdToByte,
   CommandType,
   getAddressingModes,
+  testBranchInstruction,
 } from "./instructions";
 import { DoubleWord, Word } from "./memory";
-import { C } from "vitest/dist/chunks/reporters.d.C1ogPriE.js";
 
 interface Line {
   line: string;
@@ -15,7 +15,7 @@ interface Line {
 
 const tokenRegex = /((?:\*[+-])?[{};:a-zA-Z0-9$(#)_]+(?:,\s?[XY])?)\)?/gm;
 const byteRegex = /[0-9a-f]{1,2}/gm;
-const signRegex = /^[+-]/;
+const signRegex = /^\*([+-])/;
 
 const labelReferenceRegex =
   /^[a-zA-Z]{3}\s#?([a-zA-Z_][a-zA-Z_0-9]+)(?:,\s?[XY])?$/;
@@ -57,21 +57,29 @@ function preassemble(source: string): {
   const lines = source.split("\n");
   const labels: { [key: string]: number } = {};
   const constants: { [key: string]: string } = {};
+
+  const tempLines: string[] = [];
   lines.forEach((line, index) => {
     const trimmed = line.trim();
+    const {
+      labels: labelDefs,
+      constants: constantDefs,
+      raw,
+    } = parseDefinitions(trimmed, index);
+    if (labelDefs) {
+      Object.assign(labels, labelDefs);
+    }
+    if (constantDefs) {
+      Object.assign(constants, constantDefs);
+    }
+    if (raw) {
+      tempLines.push(raw);
+    }
+  });
+  tempLines.forEach((line, index) => {
+    const trimmed = line.trim();
     const tokens = tokenize(line);
-    const { isDefinition, isLabel, hasReference } = getLineType(trimmed);
-
-    if (isLabel) {
-      const match = trimmed.match(labelDeclarationRegex)![0];
-      labels[match.slice(0, -1)] = index;
-    }
-    if (isDefinition) {
-      if (tokens && tokens.length > 1) {
-        constants[tokens[1]] = tokens[2];
-      }
-    }
-
+    const { hasReference } = getLineType(trimmed);
     if (hasReference) {
       tokens[1] = processReference(tokens[1], labels, constants);
       result.push(tokens.join(" "));
@@ -80,6 +88,36 @@ function preassemble(source: string): {
     result.push(trimmed);
   });
   return { lines: result, labels };
+}
+
+function parseDefinitions(
+  source: string,
+  index: number,
+): {
+  labels?: { [key: string]: number };
+  constants?: { [key: string]: string };
+  raw: string;
+} {
+  const { isDefinition, isLabel } = getLineType(source);
+  const tokens = tokenize(source);
+
+  if (isLabel) {
+    const match = source.match(labelDeclarationRegex)![0];
+    return {
+      labels: { [match.slice(0, -1)]: index },
+      constants: undefined,
+      raw: "",
+    };
+  } else if (isDefinition) {
+    if (tokens && tokens.length > 1) {
+      return {
+        labels: undefined,
+        constants: { [tokens[1]]: tokens[2] },
+        raw: "",
+      };
+    }
+  }
+  return { labels: undefined, constants: undefined, raw: source };
 }
 
 export function processReference(
@@ -111,15 +149,16 @@ function assemble(
   const labelAddresses: { [key: string]: DoubleWord } = {};
   const result: Word[] = [];
   lines.forEach((line, index) => {
-    const { isDefinition, isLabel, hasReference } = getLineType(line);
-    if (isDefinition || isLabel) return;
+    const { isDefinition, isLabel } = getLineType(line);
     if (index in labeledLines) {
       labelAddresses[labeledLines[index]] = new DoubleWord(
         result.length + programStart.value,
       );
     }
+  });
+  lines.forEach((line, index) => {
     if (line.startsWith(";")) return;
-    const compiled = assembleLine(
+    const compiled = lineToBytes(
       line,
       index,
       new DoubleWord(programStart.value + result.length),
@@ -130,7 +169,7 @@ function assemble(
   return result;
 }
 
-function assembleLine(
+function lineToBytes(
   line: string,
   position: number,
   offset: DoubleWord,
@@ -149,8 +188,15 @@ function assembleLine(
         `Unknown instruction at line ${position + 1}: ${tokens[0]}`,
       );
 
+    const isBranchInstruction = testBranchInstruction(instruction);
     let addressToken = tokens.length > 1 ? tokens[1] : undefined;
-
+    if (addressToken)
+      addressToken = replaceLabels(
+        addressToken,
+        labelAddresses,
+        offset,
+        isBranchInstruction,
+      );
     try {
       addressingMode = getAddressMode(instruction, addressToken);
     } catch (e) {
@@ -169,13 +215,13 @@ function assembleLine(
       result.push(command);
       result.push(...trailingBytes);
     }
-    /*
+
     console.log(
+      `line: ${position + 1}`,
       CommandType[instruction],
       AddressingMode[addressingMode],
       `${addressToken} as ${trailingBytes.map((b) => formatByte(b)).join(", ")}`,
     );
-    */
   }
   return result;
 }
@@ -215,10 +261,11 @@ class AddressingError extends Error {
   }
 }
 
-function getArgumentBytes(token: string): Word[] {
+export function getArgumentBytes(token: string): Word[] {
   const match = token.match(byteRegex);
   const sign = token.match(signRegex);
-  const isNegative = sign && sign[0] === "-";
+  console.log(sign);
+  const isNegative = sign && sign[1] === "-";
   if (!match) throw new Error(`Invalid argument: ${token}`);
   return match
     .map(
@@ -228,7 +275,7 @@ function getArgumentBytes(token: string): Word[] {
     .reverse();
 }
 
-function getLineType(line: string): {
+export function getLineType(line: string): {
   isDefinition: boolean;
   isLabel: boolean;
   hasReference: boolean;
@@ -243,4 +290,22 @@ function getLineType(line: string): {
 export function tokenize(raw: string): Array<string> {
   const tokens = raw.trim().match(tokenRegex)!;
   return tokens;
+}
+
+export function replaceLabels(
+  token: string,
+  labels: { [key: string]: DoubleWord },
+  offset: DoubleWord,
+  relative?: boolean,
+): string {
+  const label = token.slice(1, -1);
+  const address = labels[label];
+  if (address && !relative) {
+    return `$${formatByte(address.most(), true)}${formatByte(address.least(), true)}`;
+  }
+  if (address && relative) {
+    const distance = address.value - offset.value;
+    return `*${distance > 0 ? "+" : ""}${distance.toString(16)}`;
+  }
+  return token;
 }

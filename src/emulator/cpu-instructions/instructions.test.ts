@@ -273,6 +273,15 @@ describe("testing BCC instruction", () => {
     );
     expect(mockCPU.pc.value).toBe(0x10);
   });
+  it("should branch with negative address if carry flag is set", () => {
+    mockCPU.setStatus(StatusPosition.carry, false);
+    mockCPU.pc = new DoubleWord(0x20);
+    bcc.call(
+      mockCPU,
+      instruction(CommandType.bcc, AddressingMode.relative, [new Word(0x90)]),
+    );
+    expect(mockCPU.pc.value).toBe(0x10);
+  });
 });
 describe("testing BCS instruction", () => {
   const mockCPU = new MockCPU();

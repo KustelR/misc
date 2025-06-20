@@ -58,6 +58,9 @@ class Word {
   or(val: Word): Word {
     return new Word(this.value | val.value);
   }
+  dropSign(): Word {
+    return new Word(this.value & 0x7f);
+  }
   isNegative(): boolean {
     return this.bit(7) === 1;
   }
@@ -89,6 +92,9 @@ class DoubleWord {
     const res = this.value + (typeof val == "number" ? val : val.value);
     return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };
   }
+  dropSign(): DoubleWord {
+    return new DoubleWord(this.value & 0x7fff);
+  }
   sumSigned(val: DoubleWord | Word | number): {
     value: DoubleWord;
     isOverflown: boolean;
@@ -96,7 +102,7 @@ class DoubleWord {
     let argument: number;
     if (typeof val === "number") argument = val;
     else {
-      argument = val.isNegative() ? -1 : 1 * val.value;
+      argument = (val.isNegative() ? -1 : 1) * val.dropSign().value;
     }
     const res = this.value + argument;
     return { value: new DoubleWord(res % 65536), isOverflown: res > 65535 };

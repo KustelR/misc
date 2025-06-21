@@ -118,22 +118,24 @@ function MemoryCell(props: { value: number }) {
   return (
     <div
       style={{
-        backgroundColor: getColor(value),
+        backgroundColor: getColor(value)[0],
         width: 20,
         height: 20,
       }}
       className="flex flex-row items-center justify-center"
     >
-      <p className="mix-blend-exclusion">{formatByte(value, true, true)}</p>
+      <p style={{ color: getColor(value)[1] }}>
+        {formatByte(value, true, true)}
+      </p>
     </div>
   );
 }
 
-function getColor(value: number) {
-  if (value === 0) return "#000000";
-  if (value === 1) return "#ffffff";
-  const red = (value & 0x7) / 7;
-  const green = ((value >> 3) & 0x7) / 7;
-  const blue = ((value >> 6) & 0x7) / 7;
-  return `rgba(${red * 255}, ${green * 255}, ${blue * 255}, 1)`;
+function getColor(value: number): [string, string] {
+  if (value === 0) return ["#000000", "#ffffff"];
+  if (value === 1) return ["#ffffff", "#000000"];
+  if (value === 2) return ["#ff0000", "#000000"];
+  if (value === 3) return ["#00ff00", "#000000"];
+  if (value === 4) return ["#0000ff", "#000000"];
+  return ["#000000", "#ffffff"];
 }

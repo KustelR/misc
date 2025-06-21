@@ -4,6 +4,7 @@ import {
   cmdToByte,
   CommandType,
   getAddressingModes,
+  getArgumentLength,
   testBranchInstruction,
 } from "./instructions";
 import { DoubleWord, Word } from "./memory";
@@ -59,23 +60,23 @@ function preassemble(source: string): {
   const constants: { [key: string]: string } = {};
 
   const tempLines: string[] = [];
-  lines.forEach((line, index) => {
-    const trimmed = line.trim();
-    const {
-      labels: labelDefs,
-      constants: constantDefs,
-      raw,
-    } = parseDefinitions(trimmed, index);
-    if (labelDefs) {
-      Object.assign(labels, labelDefs);
-    }
-    if (constantDefs) {
-      Object.assign(constants, constantDefs);
-    }
-    if (raw) {
-      tempLines.push(raw);
-    }
-  });
+  let offset = 0;
+  lines
+    .filter((l) => !!l)
+    .forEach((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const {
+        label: labelDefs,
+        constants: constantDefs,
+        raw,
+      } = parseDefinitions(trimmed);
+      if (labelDefs) labels[labelDefs] = index - offset;
+      if (constantDefs) Object.assign(constants, constantDefs);
+      if (raw) tempLines.push(raw);
+      else offset++;
+    });
+
   tempLines.forEach((line, index) => {
     const trimmed = line.trim();
     const tokens = tokenize(line);
@@ -90,70 +91,38 @@ function preassemble(source: string): {
   return { lines: result, labels };
 }
 
-function parseDefinitions(
-  source: string,
-  index: number,
-): {
-  labels?: { [key: string]: number };
-  constants?: { [key: string]: string };
-  raw: string;
-} {
-  const { isDefinition, isLabel } = getLineType(source);
-  const tokens = tokenize(source);
-
-  if (isLabel) {
-    const match = source.match(labelDeclarationRegex)![0];
-    return {
-      labels: { [match.slice(0, -1)]: index },
-      constants: undefined,
-      raw: "",
-    };
-  } else if (isDefinition) {
-    if (tokens && tokens.length > 1) {
-      return {
-        labels: undefined,
-        constants: { [tokens[1]]: tokens[2] },
-        raw: "",
-      };
-    }
-  }
-  return { labels: undefined, constants: undefined, raw: source };
-}
-
-export function processReference(
-  token: string,
-  labels: { [key: string]: number },
-  constants: { [key: string]: string },
-): string {
-  const label = token.match(/[a-zA-Z_][a-zA-Z_0-9]*/)![0];
-  if (labels[label]) return `{${label}}`;
-  if (constants[label]) {
-    if (!/^[$#]/.test(token[0])) {
-      throw new Error("Reference should start with # or $");
-    }
-    return `${token[0]}${constants[label]}`;
-  }
-
-  throw new Error(`Undefined label or constant: ${token}`);
-}
-
 function assemble(
   lines: string[],
   labels: { [key: string]: number },
   programStart: DoubleWord,
 ): Array<Word> {
-  const labeledLines: { [key: number]: string } = {};
+  const labeledLines: { [key: number]: string[] } = {};
   Object.entries(labels).forEach(([label, index]) => {
-    labeledLines[index + 1] = label;
+    if (!labeledLines[index]) labeledLines[index] = [];
+    labeledLines[index].push(label);
   });
   const labelAddresses: { [key: string]: DoubleWord } = {};
   const result: Word[] = [];
+  let estimatedLength = 0;
   lines.forEach((line, index) => {
-    const { isDefinition, isLabel } = getLineType(line);
+    const tokens = tokenize(line);
     if (index in labeledLines) {
-      labelAddresses[labeledLines[index]] = new DoubleWord(
-        result.length + programStart.value,
-      );
+      labeledLines[index].forEach((item) => {
+        labelAddresses[item] = new DoubleWord(
+          estimatedLength + programStart.value,
+        );
+      });
+    } else {
+      try {
+        const cmd = getCmdFromToken(tokens[0]);
+        if (cmd !== undefined) {
+          const addressingMode = getAddressMode(cmd, tokens[1]);
+          const argumentLength = getArgumentLength(addressingMode);
+          estimatedLength += argumentLength + 1;
+        }
+      } catch (e) {
+        console.log(e);
+      }
     }
   });
   lines.forEach((line, index) => {
@@ -215,13 +184,14 @@ function lineToBytes(
       result.push(command);
       result.push(...trailingBytes);
     }
-
+    /*
     console.log(
       `line: ${position + 1}`,
       CommandType[instruction],
       AddressingMode[addressingMode],
       `${addressToken} as ${trailingBytes.map((b) => formatByte(b)).join(", ")}`,
     );
+    */
   }
   return result;
 }
@@ -264,7 +234,6 @@ class AddressingError extends Error {
 export function getArgumentBytes(token: string): Word[] {
   const match = token.match(byteRegex);
   const sign = token.match(signRegex);
-  console.log(sign);
   const isNegative = sign && sign[1] === "-";
   if (!match) throw new Error(`Invalid argument: ${token}`);
   return match
@@ -300,12 +269,56 @@ export function replaceLabels(
 ): string {
   const label = token.slice(1, -1);
   const address = labels[label];
-  if (address && !relative) {
+  if (!address) return token;
+
+  if (relative) {
+    let distance = address.value - offset.value;
+    return `*${distance > 0 ? "+" : ""}${distance.toString(16)}`;
+  } else {
     return `$${formatByte(address.most(), true)}${formatByte(address.least(), true)}`;
   }
-  if (address && relative) {
-    const distance = address.value - offset.value;
-    return `*${distance > 0 ? "+" : ""}${distance.toString(16)}`;
+}
+
+function parseDefinitions(source: string): {
+  label?: string;
+  constants?: { [key: string]: string };
+  raw?: string;
+} {
+  const { isDefinition, isLabel } = getLineType(source);
+  const tokens = tokenize(source);
+
+  if (isLabel) {
+    const match = source.match(labelDeclarationRegex)![0];
+    return {
+      label: match.slice(0, -1),
+      constants: undefined,
+      raw: undefined,
+    };
+  } else if (isDefinition) {
+    if (tokens && tokens.length > 1) {
+      return {
+        label: undefined,
+        constants: { [tokens[1]]: tokens[2] },
+        raw: undefined,
+      };
+    }
   }
-  return token;
+  return { label: undefined, constants: undefined, raw: source };
+}
+
+export function processReference(
+  token: string,
+  labels: { [key: string]: number },
+  constants: { [key: string]: string },
+): string {
+  const label = token.match(/[a-zA-Z_][a-zA-Z_0-9]*/)![0];
+  if (labels[label] !== undefined) return `{${label}}`;
+  if (constants[label]) {
+    if (!/^[$#]/.test(token[0])) {
+      throw new Error("Reference should start with # or $");
+    }
+    return `${token[0]}${constants[label]}`;
+  }
+
+  throw new Error(`Undefined label or constant: ${token}`);
 }

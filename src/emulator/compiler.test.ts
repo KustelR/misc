@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  compile,
   getAddressMode,
   getArgumentBytes,
   getCmdFromToken,
@@ -300,5 +301,41 @@ describe("testing getArgumentBytes()", () => {
   it("should return bytes for relative negative addresses", () => {
     const result = getArgumentBytes("*-01");
     expect(result).toEqual([new Word(0x81)]);
+  });
+});
+
+describe("testing compile()", () => {
+  it("should compile one instruction", () => {
+    const result = compile("nop", new DoubleWord(0x0600));
+    expect(result).toBeDefined();
+  });
+  it("should ignore empty lines", () => {
+    const source1 = `
+      lda #01
+      start:
+      inx
+      jmp start`;
+    const source2 = `
+      lda #01
+
+      start:
+
+      inx
+
+      jmp start`;
+
+    const result1 = compile(source1, new DoubleWord(0x0600));
+    const result2 = compile(source2, new DoubleWord(0x0600));
+    expect(result1).toEqual(result2);
+  });
+  it("should compile labeled assembly", () => {
+    const source = `  LDA #$01
+  CMP #$02
+  BNE notequal
+  STA $22
+notequal:
+  BRK`;
+    const result = compile(source, new DoubleWord(0x0600));
+    expect(result).toBeDefined();
   });
 });

@@ -1,4 +1,5 @@
 import { formatByte } from "@/utils/formatByte";
+import { tokenize as kindaTokenize } from "./compiler-new";
 import {
   AddressingMode,
   cmdToByte,
@@ -43,11 +44,15 @@ export function compile(
   log?: boolean,
 ): Array<Word> {
   const { lines, labels } = preassemble(source);
+  kindaTokenize(source);
+  /*
   if (log) {
     console.log(`Trying to assemble source:\n ${source}`);
     console.log(`Indexed source:\n ${lines.join("\n")}`);
   }
   return assemble(lines, labels, programStart);
+  */
+  return [];
 }
 
 function preassemble(source: string): {
